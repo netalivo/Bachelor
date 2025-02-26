@@ -27,7 +27,7 @@ def residual_plot(residuals):
 
 
 
-def acf_plot(residuals, lags=40):
+def acf_resid_plot(residuals, lags=40):
     resid_clean = residuals.dropna()
 
     plt.figure(figsize=(12, 6))

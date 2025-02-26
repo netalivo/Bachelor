@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import seasonal_decompose
 import seaborn as sns
 from scipy.stats import pearsonr
+from statsmodels.graphics.tsaplots import plot_acf
 
 
 
@@ -105,6 +106,17 @@ def scatter_plot(df, columns=None):
     plt.tight_layout()
     plt.show()
 
+
+def acf_plot(sales, lags=40):
+    sales_clean = sales.dropna()
+
+    plt.figure(figsize=(12, 6))
+    plot_acf(sales, lags=30)
+    plt.title('Autokorrelationsplot der Sales')
+    plt.xlabel('Lags')
+    plt.ylabel('Autokorrelation')
+    plt.grid(True)
+    plt.show()
 
 
 
