@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import seasonal_decompose
 import seaborn as sns
+from scipy.stats import pearsonr
 
 
 
@@ -67,7 +68,42 @@ def seasonal_subseries_plot(sales, date_col='Date', value_col='Weekly_Sales'):
     plt.show()
 
  
+def scatter_plot(df, columns=None):
+    # Falls keine Spalten angegeben sind, nutze alle
+    if columns is None:
+        columns = df.columns.tolist()
+    
+    # PairGrid für die gewünschten Spalten
+    g = sns.PairGrid(df[columns], diag_sharey=False)
 
+    # Untere Hälfte: Scatterplot
+    g.map_lower(sns.scatterplot, s=20, alpha=0.7)
+
+    # Diagonale: Histogramme (mit optionaler Dichtekurve)
+    g.map_diag(sns.histplot, kde=True)
+
+    # Obere Hälfte: Korrelationswerte annotieren
+    def corrfunc(x, y, **kws):
+        # Pearson-Korrelation
+        r, p = pearsonr(x.dropna(), y.dropna())
+        ax = plt.gca()
+        # Text mit r-Wert
+        text = f"r = {r:.2f}"
+        # Signifikanzniveaus mit Sternen (optional)
+        if p < 0.001:
+            text += "***"
+        elif p < 0.01:
+            text += "**"
+        elif p < 0.05:
+            text += "*"
+        ax.annotate(text, xy=(0.5, 0.5), xycoords='axes fraction',
+                    ha='center', va='center', fontsize=12)
+
+    g.map_upper(corrfunc)
+
+    # Layout anpassen und Plot anzeigen
+    plt.tight_layout()
+    plt.show()
 
 
 
