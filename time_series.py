@@ -1,7 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from statsmodels.tsa.seasonal import seasonal_decompose
 import seaborn as sns
+
+from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.graphics.tsaplots import plot_acf
 from pandas.plotting import lag_plot as pd_lag_plot
 

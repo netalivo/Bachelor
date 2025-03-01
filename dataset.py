@@ -1,8 +1,7 @@
 import pandas as pd
-import numpy as np
-
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 from scipy.stats import pearsonr
 
 
@@ -22,6 +21,24 @@ def clean(df):
     # Check for duplicate values
     duplicate_values=df.duplicated().sum()
     print(f'The data contains {duplicate_values} duplicate values')
+
+
+def features(df):
+    features = ['weekly_sales', 'temperature', 'fuel_price', 'cpi', 'unemployment']
+
+    # Set the figure size
+    plt.figure(figsize=(18, 20))
+
+    # Loop through each column in your dataset
+    for i, col in enumerate(features):
+     # Create subplots
+        plt.subplot(3, 3, i+1)
+    
+        # Plot histogram for the current column
+        sns.histplot(data=df, x=col, kde=True)
+
+    plt.tight_layout()
+    plt.show()
 
 
 def scatter_plot(df, columns=None):

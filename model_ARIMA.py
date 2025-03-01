@@ -1,9 +1,7 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import warnings
 import itertools
-import numpy as np
+
 from statsmodels.tsa.arima.model import ARIMA
+
 
 def grid_search(sales):
     p = range(0, 3)

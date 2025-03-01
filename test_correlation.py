@@ -1,9 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import warnings
-import itertools
-import numpy as np
-from statsmodels.tsa.arima.model import ARIMA
 
 from statsmodels.graphics.tsaplots import plot_acf
 from statsmodels.stats.diagnostic import acorr_ljungbox
