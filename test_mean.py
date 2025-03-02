@@ -11,9 +11,9 @@ def t_test(residuals):
 def wilcoxon_test(residuals):
     resid_clean = residuals.dropna()
 
-    stat, p_value = wilcoxon(resid_clean)
+    w_stat, p_value = wilcoxon(resid_clean)
 
-    return stat, p_value
+    return w_stat, p_value
 
 def binomial_test(residuals):
     resid_clean = residuals.dropna()
@@ -29,6 +29,6 @@ def kolmogorov_test(residuals):
 
     mean_resid = resid_clean.mean()
     std_resid = resid_clean.std()
-    stat, p_value = kstest(resid_clean, 'norm', args=(mean_resid, std_resid))
+    k_stat, p_value = kstest(resid_clean, 'norm', args=(mean_resid, std_resid))
 
-    return stat, p_value
+    return k_stat, p_value
