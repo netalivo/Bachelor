@@ -1,7 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 from scipy.stats import pearsonr
 
 
@@ -77,3 +76,11 @@ def scatter_plot(df, columns=None):
     # Layout anpassen und Plot anzeigen
     plt.tight_layout()
     plt.show()
+
+
+def boxplot(df):
+    plt.figure(figsize=(3, 6))
+    sns.boxplot(df['weekly_sales'])
+    plt.title('Boxplot of Weekly Sales')
+    plt.xlabel('Weekly Sales')
+    plt.grid(True)
