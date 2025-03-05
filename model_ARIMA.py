@@ -42,6 +42,12 @@ def build_ARIMA_model(sales, order):
     return residuals, fitted_values
 
 
+# TODO: d mit KPSS-Test bestimmen
+#       When models are compared using AICc values, it is important that all models 
+#       have the same orders of differencing
+# TODO: Seasonal ARIMA
+
+
 def grid_search_and_build_model(sales):
     # Grid Search zur Optimierung der ARIMA-Parameter mittels AIC
     p = range(0, 3)
@@ -60,7 +66,7 @@ def grid_search_and_build_model(sales):
             results = model.fit()
             # print(f"ARIMA{order} - AIC:{results.aic:.2f}  BIC:{results.bic:.2f}")
             if results.aic < best_aic:
-                best_aic = results.aic
+                best_aic = results.aicc
                 best_order = order
                 best_model = results
         except Exception as e:

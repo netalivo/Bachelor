@@ -22,7 +22,8 @@ def residual_plot(residuals):
     plt.show()
 
 
-
+# if all autocorrelations are within the threshold limits, 
+# indicates that the residuals are behaving like white noise
 def acf_resid_plot(residuals, lags=40):
     resid_clean = residuals.dropna()
 
@@ -34,6 +35,8 @@ def acf_resid_plot(residuals, lags=40):
     plt.grid(True)
     plt.show()
 
+
+# TODO: Degrees of freedom anpassen
 
 
 def box_pierce_test(residuals, lags=40):
