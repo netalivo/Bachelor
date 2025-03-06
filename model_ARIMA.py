@@ -43,12 +43,12 @@ def grid_search_and_build_model(sales):
 
 def find_SARIMA(sales):
     auto_model = pm.auto_arima(sales, 
-                           seasonal=True, 
-                           m=52,                   # Saisonalität: 52 Wochen pro Jahr
-                           trace=True,             # Ausgabe des Suchprozesses
-                           error_action='ignore',  # Fehler während der Suche ignorieren
-                           suppress_warnings=True, # Warnungen unterdrücken
-                           stepwise=True)          # Schrittweise Suche (schneller)
+                            seasonal=True, 
+                            m=52,                   # Saisonalität: 52 Wochen pro Jahr
+                            trace=True,             # Ausgabe des Suchprozesses
+                            error_action='ignore',  # Fehler während der Suche ignorieren
+                            suppress_warnings=True, # Warnungen unterdrücken
+                            stepwise=True)          # Schrittweise Suche (schneller)
     return auto_model
 
 def build_SARIMA(sales, order, seasonal_order):
