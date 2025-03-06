@@ -1,51 +1,8 @@
 import itertools
 
 from statsmodels.tsa.arima.model import ARIMA
-
-# TODO: Die einzelnen Methoden produzieren Ausreißer, die nicht in die Daten passen.
-#       Es ist noch unklar, ob die Methoden korrekt implementiert sind.
-def grid_search(sales):
-    p = range(0, 3)
-    d = range(0, 2)
-    q = range(0, 3)
-    pdq = list(itertools.product(p, d, q))
-
-    best_aic = float("inf")
-    best_order = None
-    # best_model = None
-
-    for order in pdq:
-        try:
-            model = ARIMA(sales, order=order)
-            results = model.fit()
-            if results.aic < best_aic:
-                best_aic = results.aic
-                best_order = order
-                # best_model = results
-        except Exception as e:
-            # Fehler während der Modellanpassung überspringen
-            continue
-
-    if best_order is not None:
-        print(f"\nBestes Modell: ARIMA{best_order} mit AIC: {best_aic:.2f}")
-    else:
-        print("Kein geeignetes Modell gefunden.")
-        exit()
-
-    return order
-
-def build_ARIMA_model(sales, order):
-    model = ARIMA(sales, order=order)
-    model_fit = model.fit()
-    fitted_values = model_fit.fittedvalues
-    residuals = sales - fitted_values
-    return residuals, fitted_values
-
-
-# TODO: d mit KPSS-Test bestimmen
-#       When models are compared using AICc values, it is important that all models 
-#       have the same orders of differencing
-# TODO: Seasonal ARIMA
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+import pmdarima as pm
 
 
 def grid_search_and_build_model(sales):
@@ -82,3 +39,19 @@ def grid_search_and_build_model(sales):
     # Ausgabe der Modellzusammenfassung
     # print(best_model.summary()) 
     return best_model
+
+
+def find_SARIMA(sales):
+    auto_model = pm.auto_arima(sales, 
+                           seasonal=True, 
+                           m=52,                   # Saisonalität: 52 Wochen pro Jahr
+                           trace=True,             # Ausgabe des Suchprozesses
+                           error_action='ignore',  # Fehler während der Suche ignorieren
+                           suppress_warnings=True, # Warnungen unterdrücken
+                           stepwise=True)          # Schrittweise Suche (schneller)
+    return auto_model
+
+def build_SARIMA(sales, order, seasonal_order):
+    model = SARIMAX(sales, order=order, seasonal_order=seasonal_order)
+    model_fit = model.fit(disp=False)
+    return model_fit
