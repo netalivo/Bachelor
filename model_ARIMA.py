@@ -45,9 +45,9 @@ def find_SARIMA(sales):
     auto_model = pm.auto_arima(sales, 
                             seasonal=True, 
                             m=52,                   # Saisonalität: 52 Wochen pro Jahr
-                            trace=True,             # Ausgabe des Suchprozesses
-                            error_action='ignore',  # Fehler während der Suche ignorieren
-                            suppress_warnings=True, # Warnungen unterdrücken
+                            trace=False,             # Ausgabe des Suchprozesses
+                            error_action='ignore',  
+                            suppress_warnings=True, 
                             stepwise=True)          # Schrittweise Suche (schneller)
     return auto_model
 
