@@ -5,38 +5,11 @@ import seaborn as sns
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.graphics.tsaplots import plot_acf
 from pandas.plotting import lag_plot as pd_lag_plot
-from model_ARIMA import grid_search_and_build_model, find_SARIMA, build_SARIMA
+from model_SARIMA import find_SARIMA, build_SARIMA
 from model_naiv import build_naive_model
 from SARIMA_order import optimal_orders
 
-def arima_residuals_for_all_stores(filename):
-
-    df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
-    df.columns = df.columns.str.lower()
-    residuals_dict = {}
-    
-    for store in range(1, 46):
-
-        store_df = df[df['store'] == store].copy()
-        store_df.sort_values('date', inplace=True)
-        store_df.set_index('date', inplace=True)
-        
-        sales = store_df['weekly_sales'].asfreq('W-FRI')
-        
-        try:
-            model_fit = grid_search_and_build_model(sales)
-            fitted_values = model_fit.fittedvalues
-
-            residuals = sales - fitted_values
-            
-            residuals_dict[store] = residuals
-        except Exception as e:
-            print(f"Fehler bei Store {store}: {e}")
-            residuals_dict[store] = None
-            
-    return residuals_dict
-
-
+# SARIMA-Modelle für alle Stores erstellen
 def sarima_for_all_stores(filename):
 
     df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
@@ -70,6 +43,7 @@ def sarima_for_all_stores(filename):
             
     return sarima_models
 
+# SARIMA-Parameter für alle Stores erstellen
 def arima_params(filename):
     df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
     df.columns = df.columns.str.lower()
