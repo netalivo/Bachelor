@@ -7,6 +7,7 @@ from statsmodels.graphics.tsaplots import plot_acf
 from pandas.plotting import lag_plot as pd_lag_plot
 from model_ARIMA import grid_search_and_build_model, find_SARIMA, build_SARIMA
 from model_naiv import build_naive_model
+from SARIMA_order import optimal_orders
 
 def arima_residuals_for_all_stores(filename):
 
@@ -36,36 +37,38 @@ def arima_residuals_for_all_stores(filename):
     return residuals_dict
 
 
-def sarima_residuals_for_all_stores(filename):
+def sarima_for_all_stores(filename):
 
     df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
     df.columns = df.columns.str.lower()
+
+    sarima_models = {}
     residuals_dict = {}
     
     for store in range(1, 46):
-
         store_df = df[df['store'] == store].copy()
         store_df.sort_values('date', inplace=True)
         store_df.set_index('date', inplace=True)
-        
         sales = store_df['weekly_sales'].asfreq('W-FRI')
-        
-        try:
-            sarima_params = find_SARIMA(sales)
-            order = sarima_params.order
-            seasonal_order = sarima_params.seasonal_order
-            print(f'Optimale Parameter für SARIMA: {order}, {seasonal_order}')
-            model_fit = build_SARIMA(sales, order, seasonal_order)
-            fitted_values = model_fit.fittedvalues
+    
+        params = optimal_orders.get(str(store))
+        if params:
+            order = tuple(params["order"])
+            seasonal_order = tuple(params["seasonal_order"])
+            try:
+                model_fit = build_SARIMA(sales, order, seasonal_order)
+                sarima_models[store] = model_fit
+                fitted_values = model_fit.fittedvalues
+                residuals = sales - fitted_values
+                residuals_dict[store] = residuals
 
-            residuals = sales - fitted_values
+                print(f"Store {store}: Modell erstellt mit Order {order} und Seasonal Order {seasonal_order}")
+            except Exception as e:
+                print(f"Fehler bei Store {store}: {e}")
+        else:
+            print(f"Keine Parameter für Store {store} gefunden.")
             
-            residuals_dict[store] = residuals
-        except Exception as e:
-            print(f"Fehler bei Store {store}: {e}")
-            residuals_dict[store] = None
-            
-    return residuals_dict
+    return sarima_models
 
 def arima_params(filename):
     df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
