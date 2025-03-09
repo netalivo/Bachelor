@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.graphics.tsaplots import plot_acf
@@ -8,6 +9,7 @@ from pandas.plotting import lag_plot as pd_lag_plot
 from model_SARIMA import find_SARIMA, build_SARIMA
 from model_naiv import build_naive_model
 from model_SARIMA import optimal_orders
+from sklearn.metrics import mean_squared_error
 
 # SARIMA-Modelle für alle Stores erstellen
 def sarima_for_all_stores(filename):
@@ -43,9 +45,8 @@ def sarima_for_all_stores(filename):
             
     return sarima_models
 
-
 # SARIMA-Parameter für alle Stores erstellen
-def arima_params(filename):
+def sarima_params(filename):
     df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
     df.columns = df.columns.str.lower()
     for store in range(1, 46):
@@ -92,6 +93,143 @@ def naive_residuals_for_all_stores(filename):
             
     return residuals_dict
 
+
+
+def cross_validation(sales, order, seasonal_order):
+    # Festlegen der ersten Trainingsgröße (z.B. 70 % der Daten)
+    train_size = int(len(sales) * 0.7)
+    cv_results = []  # Liste, um Ergebnisse aus jedem CV-Durchlauf zu speichern
+
+    # Expanding Window Cross-Validation: 
+    # Starte mit dem Trainingsset der Größe 'train_size' und erweitere es in jedem Schritt um einen Datenpunkt.
+    for i in range(train_size, len(sales)):
+        #Trainingsdaten: von Beginn der Zeitreihe bis zum aktuellen Index i
+        train_data = sales.iloc[:i]
+        # Testdaten: der direkt folgende Datenpunkt (One-Step-Ahead)
+        test_data = sales.iloc[i:i+1]
+    
+        try:
+            model_cv = build_SARIMA(train_data, order=order, seasonal_order=seasonal_order)
+        
+            #One-Step-Ahead-Prognose
+            forecast = model_cv.forecast(steps=1)
+            #Error berechnen
+            error = test_data.iloc[0] - forecast.iloc[0]
+        
+            # Speichere das Datum, den tatsächlichen Wert, die Prognose und den Fehler
+            cv_results.append({
+                'date': sales.index[i],
+                'actual': test_data.iloc[0],
+                'forecast': forecast.iloc[0],
+                'error': error
+            })
+        except Exception as e:
+            print(f"Fehler bei Index {i}: {e}")
+        continue
+
+    # Ergebnisse in ein DataFrame umwandeln
+    cv_df = pd.DataFrame(cv_results)
+
+    # Berechnung des RMSE (Root Mean Squared Error) als Performance-Metrik
+    rmse = np.sqrt(mean_squared_error(cv_df['actual'], cv_df['forecast']))
+    print("Cross-Validation RMSE:", rmse)
+
+
+    # Plot: Beobachtete Werte vs. Prognosen
+    plt.figure(figsize=(12, 6))
+    plt.plot(sales.index, sales, label='Beobachtete Werte', marker='.', linestyle='-')
+    plt.plot(cv_df['date'], cv_df['forecast'], label='Prognosen (CV)', marker='x', linestyle='-')
+    plt.axvline(x=sales.index[train_size], color='black', linestyle='--', label='Train/Test Split')
+    plt.title('One-Step-Ahead Forecasts (Cross-Validation)')
+    plt.xlabel('Datum')
+    plt.ylabel('Weekly Sales')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    return cv_df
+
+
+def cross_validation_naive(sales):
+    # Definiere die Größe des Trainingsdatensatzes (z.B. 70% der Daten)
+    train_size = int(len(sales) * 0.7)
+    cv_results = []  # Hier speichern wir für jeden Split Datum, tatsächlichen Wert, Prognose und Fehler
+    
+    # Expanding Window Cross-Validation: Beginne mit train_size und erweitere in jedem Schritt um einen Datenpunkt
+    for i in range(train_size, len(sales)):
+        # Trainingsdaten: alle Daten bis zum aktuellen Index i
+        train_data = sales.iloc[:i]
+        # Testdaten: der direkt folgende Datenpunkt (One-Step-Ahead)
+        test_data = sales.iloc[i:i+1]
+        
+        try:
+            # Für das naive Modell: Prognose = letzter Wert aus den Trainingsdaten
+            forecast = train_data.iloc[-1]
+            
+            # Fehler berechnen: tatsächlicher Wert - prognostizierter Wert
+            error = test_data.iloc[0] - forecast
+            
+            # Ergebnisse speichern
+            cv_results.append({
+                'date': sales.index[i],
+                'actual': test_data.iloc[0],
+                'forecast': forecast,
+                'error': error
+            })
+        except Exception as e:
+            print(f"Fehler bei Index {i}: {e}")
+            continue
+
+    # Ergebnisse in ein DataFrame umwandeln
+    cv_df = pd.DataFrame(cv_results)
+    
+    # RMSE (Root Mean Squared Error) berechnen
+    rmse = np.sqrt(mean_squared_error(cv_df['actual'], cv_df['forecast']))
+    print("Naive Model Cross-Validation RMSE:", rmse)
+    
+    # Plot: Gesamte Zeitreihe inkl. Forecasts aus der CV (nur im Testbereich)
+    plt.figure(figsize=(12, 6))
+    plt.plot(sales.index, sales, label='Beobachtete Werte', marker='.', linestyle='-')
+    plt.plot(cv_df['date'], cv_df['forecast'], label='Prognosen (Naive CV)', marker='x', linestyle='-')
+    plt.axvline(x=sales.index[train_size], color='black', linestyle='--', label='Train/Test Split')
+    plt.title('One-Step-Ahead Forecasts (Naive Cross-Validation)')
+    plt.xlabel('Datum')
+    plt.ylabel('Weekly Sales')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    
+    return cv_df
+
+def cross_validation_all_stores(filename):
+
+    df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
+    df.columns = df.columns.str.lower()
+    
+    results_list = []
+    
+    for store in range(1, 46):
+        store_df = df[df['store'] == store].copy()
+        store_df.sort_values('date', inplace=True)
+        store_df.set_index('date', inplace=True)
+        sales = store_df['weekly_sales']
+
+        print(f"Verarbeite Store {store} (Datenlänge: {len(sales)})...")
+
+        params = optimal_orders.get(str(store))
+        order = tuple(params["order"])
+        seasonal_order = tuple(params["seasonal_order"])
+
+        cv_df = cross_validation(sales, order, seasonal_order)
+        
+        # Füge die Store-Nummer hinzu
+        cv_df['store'] = store
+        
+        results_list.append(cv_df)
+    
+    # Kombiniere alle Ergebnisse in einem DataFrame
+    all_cv_results = pd.concat(results_list)
+    return all_cv_results
 
 def seasonal_plot(sales):
     df = sales.to_frame(name='sales')
