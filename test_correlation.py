@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 from statsmodels.graphics.tsaplots import plot_acf
 from statsmodels.stats.diagnostic import acorr_ljungbox
@@ -7,6 +8,7 @@ from statsmodels.regression.linear_model import OLS
 from statsmodels.tools import add_constant
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.sandbox.stats.runs import runstest_1samp
+from statsmodels.tsa.stattools import pacf
 from scipy.stats import chi2
 
 
@@ -102,3 +104,6 @@ def run_test(residuals):
     rt_zstat, rt_pvalue = runstest_1samp(resid_clean, correction=True)
 
     return rt_zstat, rt_pvalue
+
+
+

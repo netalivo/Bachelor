@@ -7,7 +7,7 @@ from statsmodels.graphics.tsaplots import plot_acf
 from pandas.plotting import lag_plot as pd_lag_plot
 from model_SARIMA import find_SARIMA, build_SARIMA
 from model_naiv import build_naive_model
-from SARIMA_order import optimal_orders
+from model_SARIMA import optimal_orders
 
 # SARIMA-Modelle für alle Stores erstellen
 def sarima_for_all_stores(filename):
@@ -43,6 +43,7 @@ def sarima_for_all_stores(filename):
             
     return sarima_models
 
+
 # SARIMA-Parameter für alle Stores erstellen
 def arima_params(filename):
     df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
@@ -65,7 +66,6 @@ def arima_params(filename):
             print(f"Fehler bei Store {store}: {e}")
             
     return model_fit
-
 
 
 def naive_residuals_for_all_stores(filename):
