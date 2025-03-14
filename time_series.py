@@ -134,20 +134,7 @@ def cross_validation(sales, order, seasonal_order):
     rmse = np.sqrt(mean_squared_error(cv_df['actual'], cv_df['forecast']))
     print("Cross-Validation RMSE:", rmse)
 
-
-    # Plot: Beobachtete Werte vs. Prognosen
-    plt.figure(figsize=(12, 6))
-    plt.plot(sales.index, sales, label='Beobachtete Werte', marker='.', linestyle='-')
-    plt.plot(cv_df['date'], cv_df['forecast'], label='Prognosen (CV)', marker='x', linestyle='-')
-    plt.axvline(x=sales.index[train_size], color='black', linestyle='--', label='Train/Test Split')
-    plt.title('One-Step-Ahead Forecasts (Cross-Validation)')
-    plt.xlabel('Datum')
-    plt.ylabel('Weekly Sales')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-    return cv_df
+    return cv_df, train_size
 
 
 def cross_validation_naive(sales):
