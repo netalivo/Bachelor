@@ -4,31 +4,38 @@ from scipy.stats import ttest_1samp, wilcoxon, binomtest, kstest
 def t_test(residuals):
     resid_clean = residuals.dropna()
 
-    t_stat, p_value = ttest_1samp(resid_clean, popmean=0)
+    t_stat, t_pvalue = ttest_1samp(resid_clean, popmean=0)
 
-    return t_stat, p_value
+    print(f"T-Test: {t_pvalue:.4f}")
+    return t_stat, t_pvalue
+
 
 def wilcoxon_test(residuals):
     resid_clean = residuals.dropna()
 
-    w_stat, p_value = wilcoxon(resid_clean)
+    w_stat, w_pvalue = wilcoxon(resid_clean)
 
-    return w_stat, p_value
+    print(f"Wilcoxon Test: {w_pvalue:.4f}")
+    return w_stat, w_pvalue
+
 
 def binomial_test(residuals):
     resid_clean = residuals.dropna()
 
     n_total = len(resid_clean)
     n_pos = sum(resid_clean > 0)
-    p_value = binomtest(n_pos, n_total, p=0.5).pvalue
+    b_pvalue = binomtest(n_pos, n_total, p=0.5).pvalue
 
-    return n_total, n_pos, p_value
+    print(f"Binomial Test: {b_pvalue:.4f}")
+    return n_total, n_pos, b_pvalue
+
 
 def kolmogorov_test(residuals):
     resid_clean = residuals.dropna()
 
     mean_resid = resid_clean.mean()
     std_resid = resid_clean.std()
-    k_stat, p_value = kstest(resid_clean, 'norm', args=(mean_resid, std_resid))
+    k_stat, k_pvalue = kstest(resid_clean, 'norm', args=(mean_resid, std_resid))
 
-    return k_stat, p_value
+    print(f"Kolmogorov Test: {k_pvalue:.4f}")
+    return k_stat, k_pvalue

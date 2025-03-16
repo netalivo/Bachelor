@@ -50,49 +50,46 @@ def cross_validation(sales, order, seasonal_order):
     return cv_df, train_size
 
 
-def cross_validation_naive(sales):
-    # Definiere die Größe des Trainingsdatensatzes (z.B. 70% der Daten)
-    train_size = int(len(sales) * 0.7)
-    cv_results = []  # Hier speichern wir für jeden Split Datum, tatsächlichen Wert, Prognose und Fehler
-    
-    # Expanding Window Cross-Validation: Beginne mit train_size und erweitere in jedem Schritt um einen Datenpunkt
-    for i in range(train_size, len(sales)):
-        # Trainingsdaten: alle Daten bis zum aktuellen Index i
-        train_data = sales.iloc[:i]
-        # Testdaten: der direkt folgende Datenpunkt (One-Step-Ahead)
-        test_data = sales.iloc[i:i+1]
-        
-        try:
-            # Für das naive Modell: Prognose = letzter Wert aus den Trainingsdaten
-            forecast = train_data.iloc[-1]
-            
-            # Fehler berechnen: tatsächlicher Wert - prognostizierter Wert
-            error = test_data.iloc[0] - forecast
-            
-            # Ergebnisse speichern
-            cv_results.append({
-                'date': sales.index[i],
-                'actual': test_data.iloc[0],
-                'forecast': forecast,
-                'error': error
-            })
-        except Exception as e:
-            print(f"Fehler bei Index {i}: {e}")
-            continue
+def cross_validation_naive(sales, seasonal_period=52):
 
-    # Ergebnisse in ein DataFrame umwandeln
+    # Definiere die Größe des Trainingsdatensatzes (z.B. 70 % der Daten)
+    train_size = int(len(sales) * 0.7)
+    cv_results = []  # Liste zum Speichern der Ergebnisse
+    
+    # Expanding Window Cross-Validation: Beginne bei train_size und erweitere in jedem Schritt
+    for i in range(train_size, len(sales)):
+        # Prüfe, ob genügend Daten vorhanden sind, um die saisonale Prognose zu bilden
+        if i - seasonal_period < 0:
+            # Falls nicht, überspringe diesen Punkt
+            continue
+        
+        # Für das saisonale naives Modell:
+        # Prognose = Wert, der 'seasonal_period' Schritte zurückliegt
+        forecast = sales.iloc[i - seasonal_period]
+        test_value = sales.iloc[i]
+        error = test_value - forecast
+        
+        cv_results.append({
+            'date': sales.index[i],
+            'actual': test_value,
+            'forecast': forecast,
+            'error': error
+        })
+    
+    # Wandle die Ergebnisse in ein DataFrame um
     cv_df = pd.DataFrame(cv_results)
     
-    # RMSE (Root Mean Squared Error) berechnen
-    rmse = np.sqrt(mean_squared_error(cv_df['actual'], cv_df['forecast']))
-    print("Naive Model Cross-Validation RMSE:", rmse)
+    # Berechne RMSE (nur für gültige Prognosen)
+    valid_df = cv_df.dropna(subset=['forecast'])
+    rmse = np.sqrt(mean_squared_error(valid_df['actual'], valid_df['forecast']))
+    print(f"Seasonal Naive Model Cross-Validation RMSE (period={seasonal_period}):", rmse)
     
-    # Plot: Gesamte Zeitreihe inkl. Forecasts aus der CV (nur im Testbereich)
+    # Plot: Zeige die gesamte Zeitreihe und die CV-Prognosen im Testbereich
     plt.figure(figsize=(12, 6))
     plt.plot(sales.index, sales, label='Beobachtete Werte', marker='.', linestyle='-')
-    plt.plot(cv_df['date'], cv_df['forecast'], label='Prognosen (Naive CV)', marker='x', linestyle='-')
+    plt.plot(valid_df['date'], valid_df['forecast'], label='Prognosen (Seasonal Naive CV)', marker='x', linestyle='-')
     plt.axvline(x=sales.index[train_size], color='black', linestyle='--', label='Train/Test Split')
-    plt.title('One-Step-Ahead Forecasts (Naive Cross-Validation)')
+    plt.title(f'One-Step-Ahead Forecasts (Seasonal Naive CV, period={seasonal_period})')
     plt.xlabel('Datum')
     plt.ylabel('Weekly Sales')
     plt.legend()

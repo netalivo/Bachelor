@@ -49,6 +49,7 @@ def box_pierce_test(residuals, lags=40):
     bp_stat = bp_results.loc[10, 'bp_stat']
     bp_pvalue = bp_results.loc[10, 'bp_pvalue'] 
 
+    print(f"Box Pierce: {bp_pvalue:.4f}")
     return bp_stat, bp_pvalue
 
 
@@ -60,6 +61,7 @@ def ljung_box_test(residuals, lags=40):
     lb_stat = lb_results.loc[10, 'lb_stat']
     lb_pvalue = lb_results.loc[10, 'lb_pvalue'] 
 
+    print(f"Ljung Box: {lb_pvalue:.4f}")
     return lb_stat, lb_pvalue
 
 
@@ -68,6 +70,7 @@ def durbin_watson_test(residuals):
 
     dw_stat = durbin_watson(resid_clean)
 
+    print(f"Durbin Watson: {dw_stat:.4f}")
     return dw_stat
 
 
@@ -95,6 +98,7 @@ def breusch_godfrey_test(residuals, lags=40):
     # Berechne den p-Wert aus der Chi-Quadrat-Verteilung mit nlags Freiheitsgraden
     bg_pvalue = 1 - chi2.cdf(bg_stat, lags)
 
+    print(f"Breusch Godfrey: {bg_pvalue:.4f}")
     return bg_stat, bg_pvalue
 
 
@@ -103,6 +107,7 @@ def run_test(residuals):
 
     rt_zstat, rt_pvalue = runstest_1samp(resid_clean, correction=True)
 
+    print(f"Run Test: {rt_pvalue:.4f}")
     return rt_zstat, rt_pvalue
 
 
