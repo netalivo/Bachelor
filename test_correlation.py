@@ -41,7 +41,7 @@ def acf_resid_plot(residuals, lags=40):
 # TODO: Degrees of freedom anpassen
 
 
-def box_pierce_test(residuals, lags=40):
+def box_pierce_test(residuals, print_results=True):
     resid_clean = residuals.dropna()
 
     bp_results = acorr_ljungbox(resid_clean, lags=[10], boxpierce=True, return_df=True)
@@ -49,32 +49,38 @@ def box_pierce_test(residuals, lags=40):
     bp_stat = bp_results.loc[10, 'bp_stat']
     bp_pvalue = bp_results.loc[10, 'bp_pvalue'] 
 
-    print(f"Box Pierce: {bp_pvalue:.4f}")
+    if print_results:
+        print(f"Box Pierce: {bp_pvalue:.4f}")
+
     return bp_stat, bp_pvalue
 
 
-def ljung_box_test(residuals, lags=40):
+def ljung_box_test(residuals, print_results=True):
     resid_clean = residuals.dropna()
 
     lb_results = acorr_ljungbox(resid_clean, lags=[10], boxpierce=False, return_df=True)
 
     lb_stat = lb_results.loc[10, 'lb_stat']
     lb_pvalue = lb_results.loc[10, 'lb_pvalue'] 
+    
+    if print_results:
+        print(f"Ljung Box: {lb_pvalue:.4f}")
 
-    print(f"Ljung Box: {lb_pvalue:.4f}")
     return lb_stat, lb_pvalue
 
 
-def durbin_watson_test(residuals):
+def durbin_watson_test(residuals, print_results=True):
     resid_clean = residuals.dropna()
 
     dw_stat = durbin_watson(resid_clean)
+    
+    if print_results:
+        print(f"Durbin Watson: {dw_stat:.4f}")
 
-    print(f"Durbin Watson: {dw_stat:.4f}")
     return dw_stat
 
 
-def breusch_godfrey_test(residuals, lags=40):
+def breusch_godfrey_test(residuals, print_results=True, lags=40):
     resid_clean = residuals.dropna()
 
     # Erstelle ein DataFrame mit den lagged residuals
@@ -98,16 +104,20 @@ def breusch_godfrey_test(residuals, lags=40):
     # Berechne den p-Wert aus der Chi-Quadrat-Verteilung mit nlags Freiheitsgraden
     bg_pvalue = 1 - chi2.cdf(bg_stat, lags)
 
-    print(f"Breusch Godfrey: {bg_pvalue:.4f}")
+    if print_results:
+        print(f"Breusch Godfrey: {bg_pvalue:.4f}")
+
     return bg_stat, bg_pvalue
 
 
-def run_test(residuals):
+def run_test(residuals, print_results=True):
     resid_clean = residuals.dropna()
 
     rt_zstat, rt_pvalue = runstest_1samp(resid_clean, correction=True)
 
-    print(f"Run Test: {rt_pvalue:.4f}")
+    if print_results:
+        print(f"Run Test: {rt_pvalue:.4f}")
+        
     return rt_zstat, rt_pvalue
 
 

@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 
 
 
-def cross_validation(sales, order, seasonal_order):
+def cross_validation_SARIMA(sales, order, seasonal_order, print_results=True):
     # Festlegen der ersten Trainingsgröße (z.B. 70 % der Daten)
     train_size = int(len(sales) * 0.7)
     cv_results = []  # Liste, um Ergebnisse aus jedem CV-Durchlauf zu speichern
@@ -47,10 +47,23 @@ def cross_validation(sales, order, seasonal_order):
     rmse = np.sqrt(mean_squared_error(cv_df['actual'], cv_df['forecast']))
     print("Cross-Validation RMSE:", rmse)
 
+    if print_results:
+        #Plot: Beobachtete Werte vs. Prognosen
+        plt.figure(figsize=(12, 6))
+        plt.plot(sales.index, sales, label='Beobachtete Werte', marker='.', linestyle='-')
+        plt.plot(cv_df['date'], cv_df['forecast'], label='Prognosen (CV)', marker='x', linestyle='-')
+        plt.axvline(x=sales.index[train_size], color='black', linestyle='--', label='Train/Test Split')
+        plt.title('One-Step-Ahead Forecasts (Cross-Validation)')
+        plt.xlabel('Datum')
+        plt.ylabel('Weekly Sales')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
     return cv_df, train_size
 
 
-def cross_validation_naive(sales, seasonal_period=52):
+def cross_validation_naive(sales, seasonal_period=52, print_results=True):
 
     # Definiere die Größe des Trainingsdatensatzes (z.B. 70 % der Daten)
     train_size = int(len(sales) * 0.7)
@@ -84,22 +97,23 @@ def cross_validation_naive(sales, seasonal_period=52):
     rmse = np.sqrt(mean_squared_error(valid_df['actual'], valid_df['forecast']))
     print(f"Seasonal Naive Model Cross-Validation RMSE (period={seasonal_period}):", rmse)
     
-    # Plot: Zeige die gesamte Zeitreihe und die CV-Prognosen im Testbereich
-    plt.figure(figsize=(12, 6))
-    plt.plot(sales.index, sales, label='Beobachtete Werte', marker='.', linestyle='-')
-    plt.plot(valid_df['date'], valid_df['forecast'], label='Prognosen (Seasonal Naive CV)', marker='x', linestyle='-')
-    plt.axvline(x=sales.index[train_size], color='black', linestyle='--', label='Train/Test Split')
-    plt.title(f'One-Step-Ahead Forecasts (Seasonal Naive CV, period={seasonal_period})')
-    plt.xlabel('Datum')
-    plt.ylabel('Weekly Sales')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    if print_results:
+        # Plot: Zeige die gesamte Zeitreihe und die CV-Prognosen im Testbereich
+        plt.figure(figsize=(12, 6))
+        plt.plot(sales.index, sales, label='Beobachtete Werte', marker='.', linestyle='-')
+        plt.plot(valid_df['date'], valid_df['forecast'], label='Prognosen (Seasonal Naive CV)', marker='x', linestyle='-')
+        plt.axvline(x=sales.index[train_size], color='black', linestyle='--', label='Train/Test Split')
+        plt.title(f'One-Step-Ahead Forecasts (Seasonal Naive CV, period={seasonal_period})')
+        plt.xlabel('Datum')
+        plt.ylabel('Weekly Sales')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
     
     return cv_df
 
 
-def cross_validation_all_stores(filename):
+def cv_SARIMA_all_stores(filename):
 
     df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
     df.columns = df.columns.str.lower()
@@ -118,7 +132,34 @@ def cross_validation_all_stores(filename):
         order = tuple(params["order"])
         seasonal_order = tuple(params["seasonal_order"])
 
-        cv_df, _ = cross_validation(sales, order, seasonal_order)
+        cv_df, _ = cross_validation_SARIMA(sales, order, seasonal_order, print_results=False)
+        
+        # Füge die Store-Nummer hinzu
+        cv_df['store'] = store
+        
+        results_list.append(cv_df)
+    
+    # Kombiniere alle Ergebnisse in einem DataFrame
+    all_cv_results = pd.concat(results_list)
+    return all_cv_results
+
+
+def cv_naive_all_stores(filename):
+
+    df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
+    df.columns = df.columns.str.lower()
+    
+    results_list = []
+    
+    for store in range(1, 46):
+        store_df = df[df['store'] == store].copy()
+        store_df.sort_values('date', inplace=True)
+        store_df.set_index('date', inplace=True)
+        sales = store_df['weekly_sales']
+
+        print(f"Verarbeite Store {store} (Datenlänge: {len(sales)})...")
+
+        cv_df = cross_validation_naive(sales, print_results=False)
         
         # Füge die Store-Nummer hinzu
         cv_df['store'] = store
