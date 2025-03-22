@@ -2,13 +2,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+from statsmodels.tsa.stattools import acf
+from statsmodels.tsa.stattools import pacf
 from statsmodels.graphics.tsaplots import plot_acf
 from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tools import add_constant
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.sandbox.stats.runs import runstest_1samp
-from statsmodels.tsa.stattools import pacf
 from scipy.stats import chi2
 
 
@@ -38,7 +39,7 @@ def acf_resid_plot(residuals, lags=40):
     plt.show()
 
 
-# TODO: Degrees of freedom anpassen
+# TODO: Degrees of freedom und lags anpassen
 
 
 def box_pierce_test(residuals, print_results=True):
@@ -67,17 +68,6 @@ def ljung_box_test(residuals, print_results=True):
         print(f"Ljung Box: {lb_pvalue:.4f}")
 
     return lb_stat, lb_pvalue
-
-
-def durbin_watson_test(residuals, print_results=True):
-    resid_clean = residuals.dropna()
-
-    dw_stat = durbin_watson(resid_clean)
-    
-    if print_results:
-        print(f"Durbin Watson: {dw_stat:.4f}")
-
-    return dw_stat
 
 
 def breusch_godfrey_test(residuals, print_results=True, lags=40):
@@ -121,14 +111,14 @@ def run_test(residuals, print_results=True):
     return rt_zstat, rt_pvalue
 
 
-def monti_test(residuals, m = 20, p = 0, q = 0):
+def monti_test(residuals, m = 20, p = 0, q = 0, print_results = True):
     if isinstance(residuals, pd.Series):
         resid = residuals.dropna().values
     else:
         resid = np.array(residuals)[~np.isnan(residuals)]
     n = len(resid)
 
-    # 2) Partielle Autokorrelationen bis Lag m berechnen (Lag 0 = 1 ignorieren)
+    # 2) ACF bis Lag m berechnen (Lag 0 = 1)
     pacf_vals = pacf(resid, nlags=m, method='ols')
     # r[0] = PACF bei Lag 1, r[1] = Lag 2, usw.
     r = pacf_vals[1:]  # Länge = m
@@ -149,9 +139,58 @@ def monti_test(residuals, m = 20, p = 0, q = 0):
         df = m  # fallback
 
     # 5) p-Wert aus der Chi-Quadrat-Verteilung
-    p_value = 1 - chi2.cdf(Q_M, df)
+    m_pvalue = 1 - chi2.cdf(Q_M, df)
+    
+    if print_results:
+        print(f"Monti Test: {m_pvalue:.4f}")
 
-    return Q_M, p_value
+    return Q_M, m_pvalue
+
+
+
+def fisher_test(residuals, m=15, p=0, q=0, print_results=True):
+
+    if isinstance(residuals, pd.Series):
+        resid = residuals.dropna().values
+    else:
+        resid = np.array(residuals)[~np.isnan(residuals)]
+    n = len(resid)
+    
+    # Berechne die ACF bis Lag m (Lag 0 = 1, daher r[0] entspricht Lag 1)
+    acf_vals = acf(resid, nlags=m, fft=False)
+    r = acf_vals[1:]  # ignoriert den Lag-0-Wert
+    
+    Q_R = 0.0
+    for k in range(1, m+1):
+        # Vermeide Division durch 0, falls m - k == 0 (k == m)
+        if (m - k) == 0:
+            continue
+        weight = (m - k - 1) / (m - k)
+        Q_R += r[k-1]**2 * weight
+    Q_R *= n * (n + 2)
+    
+    # Freiheitsgrade: df = m - (p+q); falls df < 1, setze df = m
+    df = m - (p + q)
+    if df < 1:
+        df = m
+    
+    p_value = 1 - chi2.cdf(Q_R, df)
+    
+    if print_results:
+        print(f"Fisher Test: {p_value:.4f}")
+    
+    return Q_R, p_value
+
+
+def durbin_watson_test(residuals, print_results=True):
+    resid_clean = residuals.dropna()
+
+    dw_stat = durbin_watson(resid_clean)
+    
+    if print_results:
+        print(f"Durbin Watson: {dw_stat:.4f}")
+
+    return dw_stat
 
 
 
