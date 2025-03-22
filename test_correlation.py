@@ -121,4 +121,38 @@ def run_test(residuals, print_results=True):
     return rt_zstat, rt_pvalue
 
 
+def monti_test(residuals, m = 20, p = 0, q = 0):
+    if isinstance(residuals, pd.Series):
+        resid = residuals.dropna().values
+    else:
+        resid = np.array(residuals)[~np.isnan(residuals)]
+    n = len(resid)
+
+    # 2) Partielle Autokorrelationen bis Lag m berechnen (Lag 0 = 1 ignorieren)
+    pacf_vals = pacf(resid, nlags=m, method='ols')
+    # r[0] = PACF bei Lag 1, r[1] = Lag 2, usw.
+    r = pacf_vals[1:]  # Länge = m
+
+    # 3) Monti-Teststatistik berechnen:
+    #    Q_M = n*(n+2) * sum_{k=1..m} [ r_k^2 / (n - k) ]
+    Q_M = 0.0
+    for k in range(1, m+1):
+        # Achtung: r[k-1] ist die partielle Autokorrelation bei Lag k
+        # Wenn n-k <= 0, ist die Datenlänge zu klein für so einen großen k
+        if (n - k) > 0:
+            Q_M += (r[k-1]**2) / (n - k)
+    Q_M *= n * (n + 2)
+
+    # 4) Freiheitsgrade
+    df = m - (p + q)
+    if df < 1:
+        df = m  # fallback
+
+    # 5) p-Wert aus der Chi-Quadrat-Verteilung
+    p_value = 1 - chi2.cdf(Q_M, df)
+
+    return Q_M, p_value
+
+
+
 

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from model_SARIMA import build_SARIMA
-from model_SARIMA import optimal_orders
+from model_SARIMA import optimal_orders_5, optimal_orders_10
 from sklearn.metrics import mean_squared_error
 
 
@@ -113,7 +113,7 @@ def cross_validation_naive(sales, seasonal_period=52, print_results=True):
     return cv_df
 
 
-def cv_SARIMA_all_stores(filename):
+def cv_SARIMA_all_stores(filename, whichorder):
 
     df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
     df.columns = df.columns.str.lower()
@@ -128,7 +128,9 @@ def cv_SARIMA_all_stores(filename):
 
         print(f"Verarbeite Store {store} (Datenlänge: {len(sales)})...")
 
-        params = optimal_orders.get(str(store))
+        if whichorder == 5: params = optimal_orders_5.get(str(store))
+        if whichorder == 10: params = optimal_orders_10.get(str(store))
+
         order = tuple(params["order"])
         seasonal_order = tuple(params["seasonal_order"])
 
