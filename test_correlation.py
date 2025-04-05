@@ -27,11 +27,11 @@ def residual_plot(residuals):
 
 # if all autocorrelations are within the threshold limits, 
 # indicates that the residuals are behaving like white noise
-def acf_resid_plot(residuals, lags=40):
+def acf_resid_plot(residuals, lags=29):
     resid_clean = residuals.dropna()
 
     plt.figure(figsize=(12, 6))
-    plot_acf(resid_clean, lags=30)
+    plot_acf(resid_clean, lags = lags)
     plt.title('Autokorrelationsplot der Residuen')
     plt.xlabel('Lags')
     plt.ylabel('Autokorrelation')
@@ -42,13 +42,13 @@ def acf_resid_plot(residuals, lags=40):
 # TODO: Degrees of freedom und lags anpassen
 
 
-def box_pierce_test(residuals, print_results=True):
+def box_pierce_test(residuals, lags = [29], print_results=True):
     resid_clean = residuals.dropna()
 
-    bp_results = acorr_ljungbox(resid_clean, lags=[10], boxpierce=True, return_df=True)
+    bp_results = acorr_ljungbox(resid_clean, lags, boxpierce=True, return_df=True)
 
-    bp_stat = bp_results.loc[10, 'bp_stat']
-    bp_pvalue = bp_results.loc[10, 'bp_pvalue'] 
+    bp_stat = bp_results.loc[29, 'bp_stat']
+    bp_pvalue = bp_results.loc[29, 'bp_pvalue'] 
 
     if print_results:
         print(f"Box Pierce: {bp_pvalue:.4f}")
@@ -56,13 +56,13 @@ def box_pierce_test(residuals, print_results=True):
     return bp_stat, bp_pvalue
 
 
-def ljung_box_test(residuals, print_results=True):
+def ljung_box_test(residuals, lags = [29], print_results=True):
     resid_clean = residuals.dropna()
 
-    lb_results = acorr_ljungbox(resid_clean, lags=[10], boxpierce=False, return_df=True)
+    lb_results = acorr_ljungbox(resid_clean, lags, boxpierce=False, return_df=True)
 
-    lb_stat = lb_results.loc[10, 'lb_stat']
-    lb_pvalue = lb_results.loc[10, 'lb_pvalue'] 
+    lb_stat = lb_results.loc[29, 'lb_stat']
+    lb_pvalue = lb_results.loc[29, 'lb_pvalue'] 
     
     if print_results:
         print(f"Ljung Box: {lb_pvalue:.4f}")
@@ -70,7 +70,7 @@ def ljung_box_test(residuals, print_results=True):
     return lb_stat, lb_pvalue
 
 
-def breusch_godfrey_test(residuals, print_results=True, lags=40):
+def breusch_godfrey_test(residuals, lags, print_results=True):
     resid_clean = residuals.dropna()
 
     # Erstelle ein DataFrame mit den lagged residuals
@@ -111,7 +111,7 @@ def run_test(residuals, print_results=True):
     return rt_zstat, rt_pvalue
 
 
-def monti_test(residuals, m = 20, p = 0, q = 0, print_results = True):
+def monti_test(residuals, m, p = 0, q = 0, print_results = True):
     if isinstance(residuals, pd.Series):
         resid = residuals.dropna().values
     else:
@@ -147,8 +147,7 @@ def monti_test(residuals, m = 20, p = 0, q = 0, print_results = True):
     return Q_M, m_pvalue
 
 
-
-def fisher_test(residuals, m=15, p=0, q=0, print_results=True):
+def fisher_test(residuals, m, p=0, q=0, print_results=True):
 
     if isinstance(residuals, pd.Series):
         resid = residuals.dropna().values
