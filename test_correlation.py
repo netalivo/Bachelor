@@ -8,6 +8,7 @@ from statsmodels.tsa.stattools import acf
 from statsmodels.tsa.stattools import pacf
 from statsmodels.graphics.tsaplots import plot_acf
 from statsmodels.stats.diagnostic import acorr_ljungbox
+from statsmodels.stats.diagnostic import acorr_breusch_godfrey
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tools import add_constant
 from statsmodels.stats.stattools import durbin_watson
@@ -39,7 +40,6 @@ def acf_resid_plot(residuals, lags=29):
     plt.ylabel('Autokorrelation')
     plt.grid(True)
     plt.show()
-
 
 
 def box_pierce_test(residuals, store_num, lags=[29], print_results=True):
@@ -80,30 +80,9 @@ def ljung_box_test(residuals, store_num, lags = [29], print_results=True):
     return lb_stat, lb_pvalue
 
 
-#TODO: add other breusch godfrey test
-def breusch_godfrey_test(residuals, lags, print_results=True):
-    resid_clean = residuals.dropna()
+def breusch_godfrey_test(model, lags=29, print_results=True):
 
-    # Erstelle ein DataFrame mit den lagged residuals
-    lagged_data = pd.concat([resid_clean.shift(i) for i in range(1, lags+1)], axis=1)
-    lagged_data.columns = [f'lag_{i}' for i in range(1, lags+1)]
-
-    lagged_data = lagged_data.dropna()
-
-    # Passe die Residuen so an, dass sie zu den lagged Daten passen
-    resid_aligned = resid_clean.loc[lagged_data.index]
-
-    # Füge eine Konstante hinzu
-    X = add_constant(lagged_data)
-
-    # Schätze das OLS-Modell: Residuen ~ lagged Residuen
-    ols_model = OLS(resid_aligned, X).fit()
-
-    # Berechne die Breusch-Godfrey Teststatistik: n * R²
-    bg_stat = ols_model.nobs * ols_model.rsquared
-
-    # Berechne den p-Wert aus der Chi-Quadrat-Verteilung mit nlags Freiheitsgraden
-    bg_pvalue = 1 - chi2.cdf(bg_stat, lags)
+    _, _, bg_stat, bg_pvalue = acorr_breusch_godfrey(model, nlags=lags)
 
     if print_results:
         print(f"Breusch Godfrey: {bg_pvalue:.4f}")
@@ -111,6 +90,7 @@ def breusch_godfrey_test(residuals, lags, print_results=True):
     return bg_stat, bg_pvalue
 
 
+#TODO: change degree of freedom for monti and fisher?
 def monti_test(residuals, store_num, m, print_results = True):
     if isinstance(residuals, pd.Series):
         resid = residuals.dropna().values
