@@ -2,6 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+from model_SARIMA import optimal_orders_5
+
 from statsmodels.tsa.stattools import acf
 from statsmodels.tsa.stattools import pacf
 from statsmodels.graphics.tsaplots import plot_acf
@@ -39,13 +41,16 @@ def acf_resid_plot(residuals, lags=29):
     plt.show()
 
 
-# TODO: Degrees of freedom und lags anpassen
 
-
-def box_pierce_test(residuals, lags = [29], print_results=True):
+def box_pierce_test(residuals, store_num, lags=[29], print_results=True):
     resid_clean = residuals.dropna()
 
-    bp_results = acorr_ljungbox(resid_clean, lags, boxpierce=True, return_df=True)
+    sarima_params  = optimal_orders_5.get(str(store_num))
+    order = tuple(sarima_params["order"])
+    seasonal_order = tuple(sarima_params["seasonal_order"])
+
+    freedom = (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
+    bp_results = acorr_ljungbox(resid_clean, lags, boxpierce=True, model_df=freedom, return_df=True)
 
     bp_stat = bp_results.loc[29, 'bp_stat']
     bp_pvalue = bp_results.loc[29, 'bp_pvalue'] 
@@ -56,10 +61,15 @@ def box_pierce_test(residuals, lags = [29], print_results=True):
     return bp_stat, bp_pvalue
 
 
-def ljung_box_test(residuals, lags = [29], print_results=True):
+def ljung_box_test(residuals, store_num, lags = [29], print_results=True):
     resid_clean = residuals.dropna()
 
-    lb_results = acorr_ljungbox(resid_clean, lags, boxpierce=False, return_df=True)
+    sarima_params  = optimal_orders_5.get(str(store_num))
+    order = tuple(sarima_params["order"])
+    seasonal_order = tuple(sarima_params["seasonal_order"])
+
+    freedom = (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
+    lb_results = acorr_ljungbox(resid_clean, lags, boxpierce=False, model_df=freedom, return_df=True)
 
     lb_stat = lb_results.loc[29, 'lb_stat']
     lb_pvalue = lb_results.loc[29, 'lb_pvalue'] 
@@ -70,6 +80,7 @@ def ljung_box_test(residuals, lags = [29], print_results=True):
     return lb_stat, lb_pvalue
 
 
+#TODO: add other breusch godfrey test
 def breusch_godfrey_test(residuals, lags, print_results=True):
     resid_clean = residuals.dropna()
 
@@ -100,23 +111,16 @@ def breusch_godfrey_test(residuals, lags, print_results=True):
     return bg_stat, bg_pvalue
 
 
-def run_test(residuals, print_results=True):
-    resid_clean = residuals.dropna()
-
-    rt_zstat, rt_pvalue = runstest_1samp(resid_clean, correction=True)
-
-    if print_results:
-        print(f"Run Test: {rt_pvalue:.4f}")
-        
-    return rt_zstat, rt_pvalue
-
-
-def monti_test(residuals, m, p = 0, q = 0, print_results = True):
+def monti_test(residuals, store_num, m, print_results = True):
     if isinstance(residuals, pd.Series):
         resid = residuals.dropna().values
     else:
         resid = np.array(residuals)[~np.isnan(residuals)]
     n = len(resid)
+
+    sarima_params  = optimal_orders_5.get(str(store_num))
+    order = tuple(sarima_params["order"])
+    seasonal_order = tuple(sarima_params["seasonal_order"])
 
     # 2) ACF bis Lag m berechnen (Lag 0 = 1)
     pacf_vals = pacf(resid, nlags=m, method='ols')
@@ -127,14 +131,14 @@ def monti_test(residuals, m, p = 0, q = 0, print_results = True):
     #    Q_M = n*(n+2) * sum_{k=1..m} [ r_k^2 / (n - k) ]
     Q_M = 0.0
     for k in range(1, m+1):
-        # Achtung: r[k-1] ist die partielle Autokorrelation bei Lag k
+        # r[k-1] ist die partielle Autokorrelation bei Lag k
         # Wenn n-k <= 0, ist die Datenlänge zu klein für so einen großen k
         if (n - k) > 0:
             Q_M += (r[k-1]**2) / (n - k)
     Q_M *= n * (n + 2)
 
     # 4) Freiheitsgrade
-    df = m - (p + q)
+    df = m - (order[0] + order[2])
     if df < 1:
         df = m  # fallback
 
@@ -147,13 +151,17 @@ def monti_test(residuals, m, p = 0, q = 0, print_results = True):
     return Q_M, m_pvalue
 
 
-def fisher_test(residuals, m, p=0, q=0, print_results=True):
+def fisher_test(residuals, store_num, m, print_results=True):
 
     if isinstance(residuals, pd.Series):
         resid = residuals.dropna().values
     else:
         resid = np.array(residuals)[~np.isnan(residuals)]
     n = len(resid)
+
+    sarima_params  = optimal_orders_5.get(str(store_num))
+    order = tuple(sarima_params["order"])
+    seasonal_order = tuple(sarima_params["seasonal_order"])
     
     # Berechne die ACF bis Lag m (Lag 0 = 1, daher r[0] entspricht Lag 1)
     acf_vals = acf(resid, nlags=m, fft=False)
@@ -169,7 +177,7 @@ def fisher_test(residuals, m, p=0, q=0, print_results=True):
     Q_R *= n * (n + 2)
     
     # Freiheitsgrade: df = m - (p+q); falls df < 1, setze df = m
-    df = m - (p + q)
+    df = m - (order[0] + order[2])
     if df < 1:
         df = m
     
@@ -179,6 +187,17 @@ def fisher_test(residuals, m, p=0, q=0, print_results=True):
         print(f"Fisher Test: {p_value:.4f}")
     
     return Q_R, p_value
+
+
+def run_test(residuals, print_results=True):
+    resid_clean = residuals.dropna()
+
+    rt_zstat, rt_pvalue = runstest_1samp(resid_clean, correction=True)
+
+    if print_results:
+        print(f"Run Test: {rt_pvalue:.4f}")
+        
+    return rt_zstat, rt_pvalue
 
 
 def durbin_watson_test(residuals, print_results=True):
