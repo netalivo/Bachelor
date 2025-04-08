@@ -42,7 +42,7 @@ def acf_resid_plot(residuals, lags=29):
     plt.show()
 
 
-def box_pierce_test(residuals, store_num, lags=[29], print_results=True):
+def box_pierce_test(residuals, store_num, lags=29, print_results=True):
     resid_clean = residuals.dropna()
 
     sarima_params  = optimal_orders_5.get(str(store_num))
@@ -52,16 +52,22 @@ def box_pierce_test(residuals, store_num, lags=[29], print_results=True):
     freedom = (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
     bp_results = acorr_ljungbox(resid_clean, lags, boxpierce=True, model_df=freedom, return_df=True)
 
-    bp_stat = bp_results.loc[29, 'bp_stat']
-    bp_pvalue = bp_results.loc[29, 'bp_pvalue'] 
+    bp_stats = bp_results['bp_stat']
+    bp_pvalues = bp_results['bp_pvalue'] 
+
+    bp_stat = bp_stats.iloc[-1]
+    bp_pvalue = bp_pvalues.iloc[-1]
 
     if print_results:
-        print(f"Box Pierce: {bp_pvalue:.4f}")
+        print("Box Pierce Test")
+        print(f"p-Wert an lag {lags}: {bp_pvalue:.4f}")
+        print(f"p-Wert Median: {bp_pvalues.median()}")
+        print("")
 
     return bp_stat, bp_pvalue
 
 
-def ljung_box_test(residuals, store_num, lags = [29], print_results=True):
+def ljung_box_test(residuals, store_num, lags=29, print_results=True):
     resid_clean = residuals.dropna()
 
     sarima_params  = optimal_orders_5.get(str(store_num))
@@ -71,11 +77,17 @@ def ljung_box_test(residuals, store_num, lags = [29], print_results=True):
     freedom = (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
     lb_results = acorr_ljungbox(resid_clean, lags, boxpierce=False, model_df=freedom, return_df=True)
 
-    lb_stat = lb_results.loc[29, 'lb_stat']
-    lb_pvalue = lb_results.loc[29, 'lb_pvalue'] 
+    lb_stats = lb_results['lb_stat']
+    lb_pvalues = lb_results['lb_pvalue']
+
+    lb_stat = lb_stats.iloc[-1]
+    lb_pvalue = lb_pvalues.iloc[-1]
     
     if print_results:
-        print(f"Ljung Box: {lb_pvalue:.4f}")
+        print("Ljung Box Test")
+        print(f"p-Wert an lag {lags}: {lb_pvalue:.4f}")
+        print(f"p-Wert Median: {lb_pvalues.median()}")
+        print("")
 
     return lb_stat, lb_pvalue
 

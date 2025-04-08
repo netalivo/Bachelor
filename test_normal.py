@@ -14,7 +14,7 @@ def hist_plot(residuals):
     plt.grid(True)
     plt.show()
 
-def kolmogorov_test(residuals):
+def kolmogorov_test_normal(residuals):
     resid_clean = residuals.dropna()
 
     mean_resid = resid_clean.mean()
