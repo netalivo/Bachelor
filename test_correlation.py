@@ -62,6 +62,7 @@ def box_pierce_test(residuals, store_num, lags=29, print_results=True):
         print("Box Pierce Test")
         print(f"p-Wert an lag {lags}: {bp_pvalue:.4f}")
         print(f"p-Wert Median: {bp_pvalues.median()}")
+        print(bp_pvalues)
         print("")
 
     return bp_stat, bp_pvalue
@@ -120,7 +121,6 @@ def monti_test(residuals, store_num, m, print_results = True):
     r = pacf_vals[1:]  # Länge = m
 
     # 3) Monti-Teststatistik berechnen:
-    #    Q_M = n*(n+2) * sum_{k=1..m} [ r_k^2 / (n - k) ]
     Q_M = 0.0
     for k in range(1, m+1):
         # r[k-1] ist die partielle Autokorrelation bei Lag k
@@ -142,7 +142,7 @@ def monti_test(residuals, store_num, m, print_results = True):
 
     return Q_M, m_pvalue
 
-
+# gallaghar and fisher?
 def fisher_test(residuals, store_num, m, print_results=True):
 
     if isinstance(residuals, pd.Series):
@@ -179,6 +179,17 @@ def fisher_test(residuals, store_num, m, print_results=True):
         print(f"Fisher Test: {p_value:.4f}")
     
     return Q_R, p_value
+
+
+def hosking_test():
+    return None
+
+def pena_rodriguez_test():
+    return None
+
+def mahdi_mcloid_test():
+    return None
+
 
 
 def run_test(residuals, print_results=True):

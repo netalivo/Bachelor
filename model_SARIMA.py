@@ -16,7 +16,7 @@ def find_SARIMA(sales):
                             max_P=10, max_Q=10,      
                             error_action='ignore',  
                             suppress_warnings=True, 
-                            stepwise=True)          # Schrittweise Suche (schneller)
+                            stepwise=False)          # Schrittweise Suche (schneller)
     return auto_model
 
 # SARIMA-Modell erstellen
@@ -42,6 +42,7 @@ def SARIMA_for_all_stores(filename, whichorder):
 
         if whichorder == 5: params = optimal_orders_5.get(str(store))
         if whichorder == 10: params = optimal_orders_10.get(str(store))
+        if whichorder == 15: params = optimal_orders_notstepwise.get(str(store))
         
         if params:
             order = tuple(params["order"])
@@ -191,5 +192,53 @@ optimal_orders_10 = {
     "43": {"order": [2, 1, 0], "seasonal_order": [1, 0, 0, 52]},
     "44": {"order": [1, 1, 0], "seasonal_order": [1, 0, 0, 52]},
     "45": {"order": [2, 0, 0], "seasonal_order": [0, 0, 3, 52]}
+}
+
+optimal_orders_notstepwise = {
+    "1": {"order": [4, 1, 0], "seasonal_order": [1, 0, 0, 52]},
+    "2": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "3": {"order": [1, 1, 1], "seasonal_order": [2, 0, 0, 52]},
+    "4": {"order": [2, 1, 1], "seasonal_order": [1, 0, 0, 52]},
+    "5": {"order": [4, 1, 0], "seasonal_order": [1, 0, 0, 52]},
+    "6": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "7": {"order": [2, 1, 3], "seasonal_order": [0, 1, 0, 52]},
+    "8": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "9": {"order": [4, 1, 0], "seasonal_order": [1, 0, 0, 52]},
+    "10": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "11": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "12": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "13": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "14": {"order": [3, 1, 0], "seasonal_order": [1, 0, 0, 52]},
+    "15": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "16": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "17": {"order": [1, 1, 1], "seasonal_order": [1, 0, 0, 52]},
+    "18": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "19": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "20": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "21": {"order": [0, 0, 4], "seasonal_order": [0, 0, 1, 52]},
+    "22": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "23": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "24": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "25": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "26": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "27": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "28": {"order": [0, 0, 4], "seasonal_order": [0, 0, 1, 52]},
+    "29": {"order": [0, 0, 4], "seasonal_order": [0, 0, 1, 52]},
+    "30": {"order": [1, 1, 0], "seasonal_order": [1, 0, 0, 52]},
+    "31": {"order": [0, 0, 4], "seasonal_order": [0, 0, 1, 52]},
+    "32": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "33": {"order": [0, 1, 4], "seasonal_order": [1, 0, 0, 52]},
+    "34": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "35": {"order": [4, 1, 0], "seasonal_order": [1, 0, 0, 52]},
+    "36": {"order": [0, 1, 4], "seasonal_order": [1, 0, 0, 52]},
+    "37": {"order": [1, 1, 0], "seasonal_order": [1, 0, 0, 52]},
+    "38": {"order": [1, 1, 0], "seasonal_order": [0, 1, 0, 52]},
+    "39": {"order": [4, 1, 0], "seasonal_order": [1, 0, 0, 52]},
+    "40": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "41": {"order": [3, 1, 1], "seasonal_order": [1, 0, 0, 52]},
+    "42": {"order": [2, 1, 3], "seasonal_order": [0, 1, 0, 52]},
+    "43": {"order": [0, 1, 4], "seasonal_order": [1, 0, 0, 52]},
+    "44": {"order": [0, 1, 1], "seasonal_order": [3, 0, 0, 52]},
+    "45": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]}
 }
 
