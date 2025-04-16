@@ -14,6 +14,7 @@ def naive_for_all_stores(filename):
     df = pd.read_csv(filename, parse_dates=['Date'], dayfirst=True)
     df.columns = df.columns.str.lower()
     residuals_dict = {}
+    fitted_values_dict = {}
     
     for store in range(1, 46):
 
@@ -27,8 +28,9 @@ def naive_for_all_stores(filename):
             residuals, fitted_values = build_naive_model(sales)
 
             residuals_dict[store] = residuals
+            fitted_values_dict[store] = fitted_values
         except Exception as e:
             print(f"Fehler bei Store {store}: {e}")
             residuals_dict[store] = None
             
-    return residuals_dict
+    return residuals_dict, fitted_values_dict

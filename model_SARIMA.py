@@ -9,14 +9,14 @@ def find_SARIMA(sales):
     auto_model = pm.auto_arima(sales, 
                             seasonal=True, 
                             m=52,                   # Saisonalität: 52 Wochen pro Jahr
-                            trace=False,            # Ausgabe des Suchprozesses
-                            start_p=0, start_q=0,
-                            max_p=10, max_q=10,
+                            trace=True,             # Ausgabe des Suchprozesses
+                            start_p=0, start_q=0,   # Parameter für AR und MA
+                            max_p=5, max_q=5,
                             start_P=0, start_Q=0,
-                            max_P=10, max_Q=10,      
+                            max_P=5, max_Q=5,      
                             error_action='ignore',  
                             suppress_warnings=True, 
-                            stepwise=False)          # Schrittweise Suche (schneller)
+                            stepwise=False)         # Schrittweise Suche?
     return auto_model
 
 # SARIMA-Modell erstellen

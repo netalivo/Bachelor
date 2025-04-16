@@ -42,14 +42,18 @@ def acf_resid_plot(residuals, lags=29):
     plt.show()
 
 
-def box_pierce_test(residuals, store_num, lags=29, print_results=True):
+def box_pierce_test(residuals, store_num, model, lags=29, print_results=True):
     resid_clean = residuals.dropna()
 
     sarima_params  = optimal_orders_5.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
 
-    freedom = (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
+    if model == "SARIMA":
+        freedom = (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
+    if model == "Naive":
+        freedom = 0
+
     bp_results = acorr_ljungbox(resid_clean, lags, boxpierce=True, model_df=freedom, return_df=True)
 
     bp_stats = bp_results['bp_stat']
@@ -62,20 +66,24 @@ def box_pierce_test(residuals, store_num, lags=29, print_results=True):
         print("Box Pierce Test")
         print(f"p-Wert an lag {lags}: {bp_pvalue:.4f}")
         print(f"p-Wert Median: {bp_pvalues.median()}")
-        print(bp_pvalues)
+        #print(bp_pvalues)
         print("")
 
     return bp_stat, bp_pvalue
 
 
-def ljung_box_test(residuals, store_num, lags=29, print_results=True):
+def ljung_box_test(residuals, store_num, model, lags=29, print_results=True):
     resid_clean = residuals.dropna()
 
     sarima_params  = optimal_orders_5.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
 
-    freedom = (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
+    if model == "SARIMA":
+        freedom = (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
+    if model == "Naive":
+        freedom = 0
+
     lb_results = acorr_ljungbox(resid_clean, lags, boxpierce=False, model_df=freedom, return_df=True)
 
     lb_stats = lb_results['lb_stat']
@@ -103,8 +111,8 @@ def breusch_godfrey_test(model, lags=29, print_results=True):
     return bg_stat, bg_pvalue
 
 
-#TODO: change degree of freedom for monti and fisher?
-def monti_test(residuals, store_num, m, print_results = True):
+
+def monti_test(residuals, store_num, model, m, print_results = True):
     if isinstance(residuals, pd.Series):
         resid = residuals.dropna().values
     else:
@@ -130,9 +138,12 @@ def monti_test(residuals, store_num, m, print_results = True):
     Q_M *= n * (n + 2)
 
     # 4) Freiheitsgrade
-    df = m - (order[0] + order[2])
-    if df < 1:
-        df = m  # fallback
+    if model == "SARIMA":
+        df = m - (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
+        if df < 1:
+            df = m  # fallback
+    if model == "Naive":
+        df = m
 
     # 5) p-Wert aus der Chi-Quadrat-Verteilung
     m_pvalue = 1 - chi2.cdf(Q_M, df)
@@ -143,7 +154,7 @@ def monti_test(residuals, store_num, m, print_results = True):
     return Q_M, m_pvalue
 
 # gallaghar and fisher?
-def fisher_test(residuals, store_num, m, print_results=True):
+def fisher_test(residuals, store_num, model, m, print_results=True):
 
     if isinstance(residuals, pd.Series):
         resid = residuals.dropna().values
@@ -169,8 +180,11 @@ def fisher_test(residuals, store_num, m, print_results=True):
     Q_R *= n * (n + 2)
     
     # Freiheitsgrade: df = m - (p+q); falls df < 1, setze df = m
-    df = m - (order[0] + order[2])
-    if df < 1:
+    if model == "SARIMA":
+        df = m - (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
+        if df < 1:
+            df = m  # fallback
+    if model == "Naive":
         df = m
     
     p_value = 1 - chi2.cdf(Q_R, df)
