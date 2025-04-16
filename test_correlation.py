@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import statsmodels.api as sm
 
 from model_SARIMA import optimal_orders_5
 
@@ -101,17 +102,6 @@ def ljung_box_test(residuals, store_num, model, lags=29, print_results=True):
     return lb_stat, lb_pvalue
 
 
-def breusch_godfrey_test(model, lags=29, print_results=True):
-
-    _, _, bg_stat, bg_pvalue = acorr_breusch_godfrey(model, nlags=lags)
-
-    if print_results:
-        print(f"Breusch Godfrey: {bg_pvalue:.4f}")
-
-    return bg_stat, bg_pvalue
-
-
-
 def monti_test(residuals, store_num, model, m, print_results = True):
     if isinstance(residuals, pd.Series):
         resid = residuals.dropna().values
@@ -153,7 +143,7 @@ def monti_test(residuals, store_num, model, m, print_results = True):
 
     return Q_M, m_pvalue
 
-# gallaghar and fisher?
+#TODO: PACF?
 def fisher_test(residuals, store_num, model, m, print_results=True):
 
     if isinstance(residuals, pd.Series):
@@ -193,6 +183,55 @@ def fisher_test(residuals, store_num, model, m, print_results=True):
         print(f"Fisher Test: {p_value:.4f}")
     
     return Q_R, p_value
+
+
+def breusch_godfrey_test(model, lags=29, print_results=True):
+
+    _, _, bg_stat, bg_pvalue = acorr_breusch_godfrey(model, nlags=lags)
+
+    if print_results:
+        print(f"Breusch Godfrey: {bg_pvalue:.4f}")
+
+    return bg_stat, bg_pvalue
+
+
+def breusch_godfrey_test_naive(sales, lags=5, print_results=True):
+    sales = np.asarray(sales)
+    if len(sales) <= 52 + lags:
+        raise ValueError("Zeitreihe ist zu kurz für die gewählte Saisonalität und Lags.")
+    
+    # Vorhersage nach saisonal naivem Modell
+    y_hat = np.roll(sales, 52)
+    y_hat[:52] = np.nan  # Vorhersage nicht möglich für erste s Werte
+
+    # Residuen
+    residuals = sales - y_hat
+    residuals = residuals[52:]  # NaNs am Anfang entfernen
+
+    # DataFrame mit Residuen und ihren Lags
+    df = pd.DataFrame({'resid': residuals})
+    for i in range(1, lags + 1):
+        df[f'resid_lag{i}'] = df['resid'].shift(i)
+
+    df = df.dropna()
+    
+    y_aux = df['resid']
+    X_aux = df.drop(columns='resid')
+    X_aux = sm.add_constant(X_aux)
+
+    # Hilfsregression
+    aux_model = sm.OLS(y_aux, X_aux).fit()
+    R2 = aux_model.rsquared
+    n = len(y_aux)
+    bg_stat = n * R2
+    bg_pvalue = 1 - chi2.cdf(bg_stat, df=lags)
+
+    if print_results:
+        print(f"Breusch Godfrey: {bg_pvalue:.4f}")
+
+    return bg_stat, bg_pvalue
+
+
 
 
 def hosking_test():
