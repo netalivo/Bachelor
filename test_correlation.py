@@ -66,11 +66,7 @@ def box_pierce_test(residuals, store_num, model, lags=29, print_results=True):
     bp_pvalue = bp_pvalues.iloc[-1]
 
     if print_results:
-        print("Box Pierce Test")
-        print(f"p-Wert an lag {lags}: {bp_pvalue:.4f}")
-        print(f"p-Wert Median: {bp_pvalues.median()}")
-        #print(bp_pvalues)
-        print("")
+        print(f"Box Pierce Test: {bp_pvalue:.4f}")
 
     return bp_stat, bp_pvalue
 
@@ -96,10 +92,7 @@ def ljung_box_test(residuals, store_num, model, lags=29, print_results=True):
     lb_pvalue = lb_pvalues.iloc[-1]
     
     if print_results:
-        print("Ljung Box Test")
-        print(f"p-Wert an lag {lags}: {lb_pvalue:.4f}")
-        print(f"p-Wert Median: {lb_pvalues.median()}")
-        print("")
+        print(f"Ljung Box Test: {lb_pvalue:.4f}")
 
     return lb_stat, lb_pvalue
 
