@@ -15,6 +15,8 @@ from statsmodels.tools import add_constant
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.sandbox.stats.runs import runstest_1samp
 from scipy.stats import chi2
+from scipy.linalg import toeplitz
+from scipy.stats import gamma
 
 
 def residual_plot(residuals):
@@ -55,7 +57,7 @@ def box_pierce_test(residuals, store_num, model, lags=29, print_results=True):
     if model == "Naive":
         freedom = 0
 
-    bp_results = acorr_ljungbox(resid_clean, lags, boxpierce=True, model_df=freedom, return_df=True)
+    bp_results = acorr_ljungbox(resid_clean, lags, boxpierce=True, model_df=freedom, period = 52, return_df=True)
 
     bp_stats = bp_results['bp_stat']
     bp_pvalues = bp_results['bp_pvalue'] 
@@ -85,7 +87,7 @@ def ljung_box_test(residuals, store_num, model, lags=29, print_results=True):
     if model == "Naive":
         freedom = 0
 
-    lb_results = acorr_ljungbox(resid_clean, lags, boxpierce=False, model_df=freedom, return_df=True)
+    lb_results = acorr_ljungbox(resid_clean, lags, boxpierce=False, model_df=freedom, period = 52, return_df=True)
 
     lb_stats = lb_results['lb_stat']
     lb_pvalues = lb_results['lb_pvalue']
@@ -114,7 +116,7 @@ def monti_test(residuals, store_num, model, m, print_results = True):
     seasonal_order = tuple(sarima_params["seasonal_order"])
 
     # 2) ACF bis Lag m berechnen (Lag 0 = 1)
-    pacf_vals = pacf(resid, nlags=m, method='ols')
+    pacf_vals = pacf(resid, nlags=m, method='ywmle')
     # r[0] = PACF bei Lag 1, r[1] = Lag 2, usw.
     r = pacf_vals[1:]  # Länge = m
 
@@ -144,7 +146,7 @@ def monti_test(residuals, store_num, model, m, print_results = True):
     return Q_M, m_pvalue
 
 #TODO: PACF?
-def fisher_test(residuals, store_num, model, m, print_results=True):
+def fisher_test(residuals, store_num, model, version, m, print_results=True):
 
     if isinstance(residuals, pd.Series):
         resid = residuals.dropna().values
@@ -157,7 +159,11 @@ def fisher_test(residuals, store_num, model, m, print_results=True):
     seasonal_order = tuple(sarima_params["seasonal_order"])
     
     # Berechne die ACF bis Lag m (Lag 0 = 1, daher r[0] entspricht Lag 1)
-    acf_vals = acf(resid, nlags=m, fft=False)
+    if version == "acf":
+        acf_vals = acf(resid, nlags=m, fft=False)
+    elif version == "pacf":
+        acf_vals = pacf(resid, nlags=m)
+
     r = acf_vals[1:]  # ignoriert den Lag-0-Wert
     
     Q_R = 0.0
@@ -166,7 +172,7 @@ def fisher_test(residuals, store_num, model, m, print_results=True):
         if (m - k) == 0:
             continue
         weight = (m - k - 1) / (m - k)
-        Q_R += r[k-1]**2 * weight
+        Q_R += weight * r[k-1]**2 / (n - k)
     Q_R *= n * (n + 2)
     
     # Freiheitsgrade: df = m - (p+q); falls df < 1, setze df = m
@@ -231,17 +237,50 @@ def breusch_godfrey_test_naive(sales, lags=5, print_results=True):
 
     return bg_stat, bg_pvalue
 
-
-
-
-def hosking_test():
+def mahdi_mcleod_test():
     return None
 
-def pena_rodriguez_test():
+def arranz_test():
     return None
 
-def mahdi_mcloid_test():
-    return None
+def pena_rodriguez_test(residuals, store_num, lags=29, print_results=True):
+
+    sarima_params  = optimal_orders_5.get(str(store_num))
+    order = tuple(sarima_params["order"])
+    seasonal_order = tuple(sarima_params["seasonal_order"])
+    residuals = np.asarray(residuals)
+
+
+    n = residuals.size
+    m = lags
+    total_params = order[0] + order[2] + seasonal_order[0] + seasonal_order[2]
+
+    # 1) Autokorrelationsvektor bis Lag m
+    acfs = [1.0] + [
+        np.corrcoef(residuals[:-k], residuals[k:])[0,1]
+        for k in range(1, m+1)
+    ]
+    # 2) Autokorrelationsmatrix
+    Rm = toeplitz(acfs)
+    # 3) Teststatistik
+    detRm = np.linalg.det(Rm)
+    D_stat = n * (1 - detRm**(1.0 / m))
+
+
+    # Gamma-Approximation mit Berücksichtigung von p+q+P+Q
+    mu  = (m + 1) / 2.0 - total_params
+    var = (m + 1) * (2*m + 1) / (3.0 * m) - 2 * total_params
+    alpha = mu * mu / var
+    beta  = var / mu
+    p_value = 1 - gamma.cdf(D_stat, a=alpha, scale=beta)
+    
+    if print_results:
+        print(f"Pena Rodriguez Test: {p_value:.4f}")
+    return D_stat, p_value
+
+
+
+
 
 
 
