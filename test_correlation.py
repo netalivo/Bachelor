@@ -35,14 +35,23 @@ def residual_plot(residuals):
 # indicates that the residuals are behaving like white noise
 def acf_resid_plot(residuals, lags=29):
     resid_clean = residuals.dropna()
+    T = len(resid_clean)
+    bound = 1.96 / np.sqrt(T)
 
-    plt.figure(figsize=(12, 6))
-    plot_acf(resid_clean, lags = lags)
-    plt.title('Autokorrelationsplot der Residuen')
-    plt.xlabel('Lags')
-    plt.ylabel('Autokorrelation')
-    plt.grid(True)
+    fig, ax = plt.subplots(figsize=(12, 6))
+    # alpha=None schaltet die automatischen Bänder ab
+    plot_acf(resid_clean, lags=lags, alpha=0.05, zero=False, ax=ax)
+
+    # feste ±1.96/√T‑Linien
+    ax.axhline(bound,  linestyle='--', linewidth=1)
+    ax.axhline(-bound, linestyle='--', linewidth=1)
+
+    ax.set_title('Autokorrelationsplot der Residuen')
+    ax.set_xlabel('Lags')
+    ax.set_ylabel('Autokorrelation')
+    ax.grid(True)
     plt.show()
+
 
 
 def box_pierce_test(residuals, store_num, model, lags=29, print_results=True):
@@ -138,7 +147,7 @@ def monti_test(residuals, store_num, model, m, print_results = True):
 
     return Q_M, m_pvalue
 
-#TODO: PACF?
+
 def fisher_test(residuals, store_num, model, version, m, print_results=True):
 
     if isinstance(residuals, pd.Series):
@@ -164,7 +173,7 @@ def fisher_test(residuals, store_num, model, version, m, print_results=True):
         # Vermeide Division durch 0, falls m - k == 0 (k == m)
         if (m - k) == 0:
             continue
-        weight = (m - k - 1) / (m - k)
+        weight = (m - k + 1) / m
         Q_R += weight * r[k-1]**2 / (n - k)
     Q_R *= n * (n + 2)
     
@@ -230,50 +239,131 @@ def breusch_godfrey_test_naive(sales, lags=5, print_results=True):
 
     return bg_stat, bg_pvalue
 
-def mahdi_mcleod_test():
-    return None
 
-def arranz_test():
-    return None
 
-def pena_rodriguez_test(residuals, store_num, lags=29, print_results=True):
 
+
+def pena_rodriguez_test_original(residuals, store_num, model, m=29, print_results=True):
+    """
+    Peña & Rodríguez (2002), Definition 2.4 (Gl. 2.6–2.10) – 
+    Portmanteau-Test auf Basis der Determinante der ACF-Matrix.
+
+    Parameters
+    ----------
+    residuals : array-like, Länge n
+        Die Residuen aus dem ARMA(p,q)-Fit (ungewichtet, unstandardisiert).
+    p, q : int
+        Ordnung des AR- und MA-Teils.
+    m : int
+        Anzahl der Autokorrelations-Lags (m in der Publikation).
+
+    Returns
+    -------
+    D_stat : float
+        D_m = n [1 – |R_m|^(1/m)].
+    p_value : float
+        p-Wert basierend auf der Gamma-Approximation aus Gl. (2.9)–(2.10).
+    """
     sarima_params  = optimal_orders_5.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
     residuals = np.asarray(residuals)
 
+    # 1) Residuen bereinigen
+    resid = np.asarray(residuals, float)
+    resid = resid[~np.isnan(resid)]
+    n = resid.size
 
-    n = residuals.size
-    m = lags
-    total_params = order[0] + order[2] + seasonal_order[0] + seasonal_order[2]
+    # 2) Sample-ACF bis Lag m
+    acf_vals = acf(resid, nlags=m, fft=False)  # acf_vals[0]==1, dann 1..m
+    r = acf_vals[1:]                            # r₁,…,rₘ
 
-    # 1) Autokorrelationsvektor bis Lag m
-    acfs = [1.0] + [
-        np.corrcoef(residuals[:-k], residuals[k:])[0,1]
-        for k in range(1, m+1)
-    ]
-    # 2) Autokorrelationsmatrix
-    Rm = toeplitz(acfs)
-    # 3) Teststatistik
-    detRm = np.linalg.det(Rm)
-    D_stat = n * (1 - detRm**(1.0 / m))
+    # 3) Autokorrelationsmatrix und D_m
+    Rm = toeplitz(np.r_[1.0, r])                # Gl. (2.6)
+    det_Rm = np.linalg.det(Rm)
+    D_stat = n * (1.0 - det_Rm**(1.0/m))         # Gl. (2.7)
 
+    if model == "SARIMA":
+    # 4) Gamma-Parameter (Shape–Rate) aus Gl. (2.9) & (2.10)
+        delta = (m + 1) - 2*(order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
+    # gemeinsamer Nenner B = 2[(m+1)(2m+1) − 6m(p+q)]
+        B = (m+1)*(2*m+1) - 6*m*(order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
+    if model == "Naive":
+        delta = (m + 1)
+        B = (m+1)*(2*m+1)
 
-    # Gamma-Approximation mit Berücksichtigung von p+q+P+Q
-    mu  = (m + 1) / 2.0 - total_params
-    var = (m + 1) * (2*m + 1) / (3.0 * m) - 2 * total_params
-    alpha = mu * mu / var
-    beta  = var / mu
-    p_value = 1 - gamma.cdf(D_stat, a=alpha, scale=beta)
-    
+    alpha = (3*m * delta**2) / (2 * B)           # Shape (α)
+    beta_rate = (3*m * delta) / B               # Rate  (β)
+
+    # SciPy erwartet "scale" = 1/rate
+    scale = 1.0 / beta_rate
+    p_value = 1 - gamma.cdf(D_stat, a=alpha, scale=scale)
+
     if print_results:
         print(f"Pena Rodriguez Test: {p_value:.4f}")
     return D_stat, p_value
 
 
+def pena_rodriguez_test_mc(residuals, m=29, mc_runs=1000, random_state=None, print_results=True):
+    """
+    Peña & Rodríguez (2002) Portmanteau-Test (Gl. 2.6–2.7)
+    mit p‑Wert via Monte‑Carlo‑Simulation.
 
+    Parameters
+    ----------
+    residuals : array-like, Länge n
+        Die Residuen aus dem ARMA/SARIMA‑Fit (ungewichtet, unstandardisiert).
+    store_num : str oder int
+        Schlüssel in optimal_orders_5 für die Modell‑Parameter.
+    model : {'SARIMA','Naive'}
+        Welches Modell wurde verwendet (zur DF‑Berechnung).
+    m : int
+        Anzahl der Autokorrelations‑Lags.
+    mc_runs : int
+        Anzahl der Monte‑Carlo‑Replikationen.
+    random_state : int oder None
+        Seed für die Reproduzierbarkeit.
+    print_results : bool
+        Ausgabe des Ergebnisses auf der Konsole.
 
+    Returns
+    -------
+    D_obs : float
+        Beobachteter D_m‑Wert.
+    p_mc  : float
+        p‑Wert aus der Monte‑Carlo‑Simulation.
+    """
+
+    # 1) Residuen bereinigen
+    resid = np.asarray(residuals, float)
+    resid = resid[~np.isnan(resid)]
+    n = resid.size
+
+    # Hilfsfunktion zur Berechnung von D_m
+    def compute_D(x):
+        acf_vals = acf(x, nlags=m, fft=False)[1:]      # r₁…rₘ
+        Rm = toeplitz(np.r_[1.0, acf_vals])            # Gl. (2.6)
+        return n * (1.0 - np.linalg.det(Rm)**(1.0/m))  # Gl. (2.7)
+
+    # 2) Beobachtete Teststatistik
+    D_obs = compute_D(resid)
+
+    # 3) Monte‑Carlo‑Simulation unter H0: weiße Rauschen‑Residuen
+    rng = np.random.default_rng(random_state)
+    count = 0
+    for _ in range(mc_runs):
+        sim = rng.standard_normal(n)
+        D_sim = compute_D(sim)
+        if D_sim >= D_obs:
+            count += 1
+
+    # 4) p‑Wert mit „+1“‑Korrektur
+    p_mc = (count + 1) / (mc_runs + 1)
+
+    if print_results:
+        print(f"Pena Rodriguez (m={m}, N={mc_runs}): "
+              f"{p_mc:.4f}")
+    return D_obs, p_mc
 
 
 
