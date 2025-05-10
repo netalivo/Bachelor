@@ -1,1 +1,0 @@
-Store 1: Optimale Parameter für SARIMA: (4, 1, 0), (1, 0, 0, 52)

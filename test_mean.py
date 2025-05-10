@@ -1,4 +1,5 @@
-from scipy.stats import ttest_1samp, wilcoxon, binomtest, kstest
+from scipy.stats import ttest_1samp, wilcoxon, binomtest, kstest, norm
+import numpy as np
 
 
 def t_test(residuals, print_results=True):
@@ -36,12 +37,29 @@ def binomial_test(residuals, print_results=True):
     return n_total, n_pos, b_pvalue
 
 
+def z_test(residuals, print_results=True):
+    resid_clean = residuals.dropna()
+
+    n = len(resid_clean)
+    mean_resid = resid_clean.mean()
+    sigma_hat = resid_clean.std(ddof=0)      # ddof=0 für Populationsschätzung
+    
+    se = sigma_hat / np.sqrt(n) # Standardfehler
+    z_stat = (mean_resid) / se
+    p_value = 2 * norm.sf(abs(z_stat))
+    
+    if print_results:
+        print(f"Z-Test: {p_value:.4f}")
+    return z_stat, p_value
+
+
+
 def kolmogorov_test(residuals, print_results=True):
     resid_clean = residuals.dropna()
 
     mean_resid = resid_clean.mean()
     std_resid = resid_clean.std()
-    k_stat, k_pvalue = kstest(resid_clean, 'norm', args=(mean_resid, std_resid))
+    k_stat, k_pvalue = kstest(resid_clean, 'norm', args=(0, std_resid))
 
     if print_results:
         print(f"Kolmogorov Test: {k_pvalue:.4f}")

@@ -68,7 +68,6 @@ def sarima_params(filename):
     df.columns = df.columns.str.lower()
     
     output_file = "optimal_sarima_orders.txt"
-    # Öffne die Datei im Schreibmodus; vorhandene Datei wird überschrieben
     with open(output_file, "w") as f:
         for store in range(1, 46):
             store_df = df[df['store'] == store].copy()
@@ -86,9 +85,7 @@ def sarima_params(filename):
                 result_line = f"Store {store}: Optimale Parameter für SARIMA: {order}, {seasonal_order}\n"
                 f.write(result_line)
                 print(result_line, end="")
-                
-                # Optional: Modell bauen (wenn du es auch weiter verwenden möchtest)
-                # model_fit = build_SARIMA(sales, order, seasonal_order)
+
             except Exception as e:
                 error_line = f"Fehler bei Store {store}: {e}\n"
                 f.write(error_line)

@@ -9,12 +9,12 @@ from sklearn.metrics import mean_squared_error
 
 
 def cross_validation_SARIMA(sales, order, seasonal_order, print_results=True):
-    # Festlegen der ersten Trainingsgröße (z.B. 70 % der Daten)
-    train_size = int(len(sales) * 0.7)
-    cv_results = []  # Liste, um Ergebnisse aus jedem CV-Durchlauf zu speichern
+    # Festlegen der ersten Trainingsgröße
+    train_size = int(len(sales) * 0.6)
+    cv_results = [] 
 
-    # Expanding Window Cross-Validation: 
-    # Starte mit dem Trainingsset der Größe 'train_size' und erweitere es in jedem Schritt um einen Datenpunkt.
+    # Expanding Window Cross-Validation
+    # Starte mit dem Trainingsset der Größe 'train_size' und erweitere es in jedem Schritt um einen Datenpunkt
     for i in range(train_size, len(sales)):
         #Trainingsdaten: von Beginn der Zeitreihe bis zum aktuellen Index i
         train_data = sales.iloc[:i]
@@ -24,7 +24,7 @@ def cross_validation_SARIMA(sales, order, seasonal_order, print_results=True):
         try:
             model_cv = build_SARIMA(train_data, order=order, seasonal_order=seasonal_order)
         
-            #One-Step-Ahead-Prognose
+            #One-Step-Ahead Prognose
             forecast = model_cv.forecast(steps=1)
             #Error berechnen
             error = test_data.iloc[0] - forecast.iloc[0]
@@ -65,23 +65,23 @@ def cross_validation_SARIMA(sales, order, seasonal_order, print_results=True):
 
 def cross_validation_naive(sales, seasonal_period=52, print_results=True):
 
-    # Definiere die Größe des Trainingsdatensatzes (z.B. 70 % der Daten)
-    train_size = int(len(sales) * 0.7)
-    cv_results = []  # Liste zum Speichern der Ergebnisse
+    # Festlegen der ersten Trainingsgröße
+    train_size = int(len(sales) * 0.6)
+    cv_results = []
     
-    # Expanding Window Cross-Validation: Beginne bei train_size und erweitere in jedem Schritt
+    # Expanding Window Cross-Validation
+    # Starte mit dem Trainingsset der Größe 'train_size' und erweitere es in jedem Schritt um einen Datenpunkt
     for i in range(train_size, len(sales)):
         # Prüfe, ob genügend Daten vorhanden sind, um die saisonale Prognose zu bilden
         if i - seasonal_period < 0:
-            # Falls nicht, überspringe diesen Punkt
             continue
         
-        # Für das saisonale naives Modell:
-        # Prognose = Wert, der 'seasonal_period' Schritte zurückliegt
+        # Prognose = Wert, der seasonal_period Schritte zurückliegt
         forecast = sales.iloc[i - seasonal_period]
         test_value = sales.iloc[i]
         error = test_value - forecast
         
+        # Speichere das Datum, den tatsächlichen Wert, die Prognose und den Fehler
         cv_results.append({
             'date': sales.index[i],
             'actual': test_value,
@@ -89,10 +89,10 @@ def cross_validation_naive(sales, seasonal_period=52, print_results=True):
             'error': error
         })
     
-    # Wandle die Ergebnisse in ein DataFrame um
+    # Ergebnisse in ein DataFrame umwandeln
     cv_df = pd.DataFrame(cv_results)
     
-    # Berechne RMSE (nur für gültige Prognosen)
+    # Berechne RMSE
     valid_df = cv_df.dropna(subset=['forecast'])
     rmse = np.sqrt(mean_squared_error(valid_df['actual'], valid_df['forecast']))
     print(f"Seasonal Naive Model Cross-Validation RMSE (period={seasonal_period}):", rmse)

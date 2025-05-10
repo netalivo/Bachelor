@@ -54,7 +54,7 @@ def acf_resid_plot(residuals, lags=29):
 
 
 
-def box_pierce_test(residuals, store_num, model, lags=29, print_results=True):
+def box_pierce_test(residuals, store_num, model, sample = "IS", lags=29, print_results=True):
     resid_clean = residuals.dropna()
 
     sarima_params  = optimal_orders_5.get(str(store_num))
@@ -66,7 +66,10 @@ def box_pierce_test(residuals, store_num, model, lags=29, print_results=True):
     if model == "Naive":
         freedom = 0
 
-    bp_results = acorr_ljungbox(resid_clean, lags, boxpierce=True, model_df=freedom, period = 52, return_df=True)
+    if sample == "IS":
+        bp_results = acorr_ljungbox(resid_clean, lags, boxpierce=True, model_df=freedom, period = 52, return_df=True)
+    if sample == "OOS":
+        bp_results = acorr_ljungbox(resid_clean, lags, boxpierce=True, model_df=freedom, return_df=True)
 
     bp_stats = bp_results['bp_stat']
     bp_pvalues = bp_results['bp_pvalue'] 
@@ -80,7 +83,7 @@ def box_pierce_test(residuals, store_num, model, lags=29, print_results=True):
     return bp_stat, bp_pvalue
 
 
-def ljung_box_test(residuals, store_num, model, lags=29, print_results=True):
+def ljung_box_test(residuals, store_num, model, sample = "IS", lags=29, print_results=True):
     resid_clean = residuals.dropna()
 
     sarima_params  = optimal_orders_5.get(str(store_num))
@@ -92,7 +95,10 @@ def ljung_box_test(residuals, store_num, model, lags=29, print_results=True):
     if model == "Naive":
         freedom = 0
 
-    lb_results = acorr_ljungbox(resid_clean, lags, boxpierce=False, model_df=freedom, period = 52, return_df=True)
+    if sample == "IS":
+        lb_results = acorr_ljungbox(resid_clean, lags, boxpierce=False, model_df=freedom, period = 52, return_df=True)
+    if sample == "OOS":
+        lb_results = acorr_ljungbox(resid_clean, lags, boxpierce=False, model_df=freedom, return_df=True)
 
     lb_stats = lb_results['lb_stat']
     lb_pvalues = lb_results['lb_pvalue']
@@ -117,29 +123,29 @@ def monti_test(residuals, store_num, model, m, print_results = True):
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
 
-    # 2) ACF bis Lag m berechnen (Lag 0 = 1)
-    pacf_vals = pacf(resid, nlags=m, method='ywmle')
+    # ACF bis Lag m berechnen
+    pacf_vals = pacf(resid, nlags=m, method='ywadjusted')
     # r[0] = PACF bei Lag 1, r[1] = Lag 2, usw.
     r = pacf_vals[1:]  # Länge = m
 
-    # 3) Monti-Teststatistik berechnen:
+    # Monti-Teststatistik berechnen:
     Q_M = 0.0
     for k in range(1, m+1):
         # r[k-1] ist die partielle Autokorrelation bei Lag k
-        # Wenn n-k <= 0, ist die Datenlänge zu klein für so einen großen k
+        # Wenn n-k <= 0, ist die Datenlänge zu klein für k
         if (n - k) > 0:
             Q_M += (r[k-1]**2) / (n - k)
     Q_M *= n * (n + 2)
 
-    # 4) Freiheitsgrade
+    # Freiheitsgrade:
     if model == "SARIMA":
         df = m - (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
         if df < 1:
-            df = m  # fallback
+            df = m
     if model == "Naive":
         df = m
 
-    # 5) p-Wert aus der Chi-Quadrat-Verteilung
+    # p-Wert aus der Chi-Quadrat-Verteilung:
     m_pvalue = 1 - chi2.cdf(Q_M, df)
     
     if print_results:
@@ -160,24 +166,25 @@ def fisher_test(residuals, store_num, model, version, m, print_results=True):
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
     
-    # Berechne die ACF bis Lag m (Lag 0 = 1, daher r[0] entspricht Lag 1)
+    # (P)ACF bis Lag m berechnen
     if version == "acf":
-        acf_vals = acf(resid, nlags=m, fft=False)
+        acf_vals = acf(resid, nlags=m, fft=False, adjusted=False, missing='none')
     elif version == "pacf":
-        acf_vals = pacf(resid, nlags=m)
+        acf_vals = pacf(resid, nlags=m, method='ywadjusted')
 
     r = acf_vals[1:]  # ignoriert den Lag-0-Wert
     
+    # Fisher-Teststatistik berechnen:
     Q_R = 0.0
     for k in range(1, m+1):
-        # Vermeide Division durch 0, falls m - k == 0 (k == m)
+        # Vermeide Division durch 0
         if (m - k) == 0:
             continue
         weight = (m - k + 1) / m
         Q_R += weight * r[k-1]**2 / (n - k)
     Q_R *= n * (n + 2)
     
-    # Freiheitsgrade: df = m - (p+q); falls df < 1, setze df = m
+    # Freiheitsgrade:
     if model == "SARIMA":
         df = m - (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
         if df < 1:
@@ -185,6 +192,7 @@ def fisher_test(residuals, store_num, model, version, m, print_results=True):
     if model == "Naive":
         df = m
     
+    # p-Wert aus der Chi-Quadrat-Verteilung:
     p_value = 1 - chi2.cdf(Q_R, df)
     
     if print_results:
@@ -195,12 +203,12 @@ def fisher_test(residuals, store_num, model, version, m, print_results=True):
 
 def breusch_godfrey_test(model, lags=29, print_results=True):
 
-    _, _, bg_stat, bg_pvalue = acorr_breusch_godfrey(model, nlags=lags)
+    lm_stat, lm_pvalue, _, _ = acorr_breusch_godfrey(model, nlags=lags)
 
     if print_results:
-        print(f"Breusch Godfrey: {bg_pvalue:.4f}")
+        print(f"Breusch Godfrey: {lm_pvalue:.4f}")
 
-    return bg_stat, bg_pvalue
+    return lm_stat, lm_pvalue
 
 
 def breusch_godfrey_test_naive(sales, lags=5, print_results=True):
@@ -240,36 +248,30 @@ def breusch_godfrey_test_naive(sales, lags=5, print_results=True):
     return bg_stat, bg_pvalue
 
 
+def breusch_godfrey_oos(residuals, lags=5):
+    resid = np.asarray(residuals)[~np.isnan(residuals)]
+    df = pd.DataFrame({'resid': resid})
+    for i in range(1, lags+1):
+        df[f'lag{i}'] = df['resid'].shift(i)
+    df = df.dropna()
+    y_aux = df['resid']
+    X_aux = sm.add_constant(df.drop(columns='resid'))
+    aux = sm.OLS(y_aux, X_aux).fit()
+    n = len(y_aux)
+    bg_stat = n * aux.rsquared
+    bg_pvalue = 1 - chi2.cdf(bg_stat, df=lags)
+    return bg_stat, bg_pvalue
 
 
 
 def pena_rodriguez_test_original(residuals, store_num, model, m=29, print_results=True):
-    """
-    Peña & Rodríguez (2002), Definition 2.4 (Gl. 2.6–2.10) – 
-    Portmanteau-Test auf Basis der Determinante der ACF-Matrix.
 
-    Parameters
-    ----------
-    residuals : array-like, Länge n
-        Die Residuen aus dem ARMA(p,q)-Fit (ungewichtet, unstandardisiert).
-    p, q : int
-        Ordnung des AR- und MA-Teils.
-    m : int
-        Anzahl der Autokorrelations-Lags (m in der Publikation).
-
-    Returns
-    -------
-    D_stat : float
-        D_m = n [1 – |R_m|^(1/m)].
-    p_value : float
-        p-Wert basierend auf der Gamma-Approximation aus Gl. (2.9)–(2.10).
-    """
     sarima_params  = optimal_orders_5.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
     residuals = np.asarray(residuals)
 
-    # 1) Residuen bereinigen
+    # Residuen bereinigen
     resid = np.asarray(residuals, float)
     resid = resid[~np.isnan(resid)]
     n = resid.size
@@ -305,47 +307,22 @@ def pena_rodriguez_test_original(residuals, store_num, model, m=29, print_result
 
 
 def pena_rodriguez_test_mc(residuals, m=29, mc_runs=1000, random_state=None, print_results=True):
-    """
-    Peña & Rodríguez (2002) Portmanteau-Test (Gl. 2.6–2.7)
-    mit p‑Wert via Monte‑Carlo‑Simulation.
 
-    Parameters
-    ----------
-    residuals : array-like, Länge n
-        Die Residuen aus dem ARMA/SARIMA‑Fit (ungewichtet, unstandardisiert).
-    store_num : str oder int
-        Schlüssel in optimal_orders_5 für die Modell‑Parameter.
-    model : {'SARIMA','Naive'}
-        Welches Modell wurde verwendet (zur DF‑Berechnung).
-    m : int
-        Anzahl der Autokorrelations‑Lags.
-    mc_runs : int
-        Anzahl der Monte‑Carlo‑Replikationen.
-    random_state : int oder None
-        Seed für die Reproduzierbarkeit.
-    print_results : bool
-        Ausgabe des Ergebnisses auf der Konsole.
+    #mit p‑Wert via Monte‑Carlo‑Simulation.
 
-    Returns
-    -------
-    D_obs : float
-        Beobachteter D_m‑Wert.
-    p_mc  : float
-        p‑Wert aus der Monte‑Carlo‑Simulation.
-    """
 
-    # 1) Residuen bereinigen
+    # Residuen bereinigen
     resid = np.asarray(residuals, float)
     resid = resid[~np.isnan(resid)]
     n = resid.size
 
     # Hilfsfunktion zur Berechnung von D_m
     def compute_D(x):
-        acf_vals = acf(x, nlags=m, fft=False)[1:]      # r₁…rₘ
-        Rm = toeplitz(np.r_[1.0, acf_vals])            # Gl. (2.6)
-        return n * (1.0 - np.linalg.det(Rm)**(1.0/m))  # Gl. (2.7)
+        acf_vals = acf(x, nlags=m, fft=False, adjusted=False, missing='none')[1:]      
+        Rm = toeplitz(np.r_[1.0, acf_vals])            
+        return n * (1.0 - np.linalg.det(Rm)**(1.0/m))  
 
-    # 2) Beobachtete Teststatistik
+    # Beobachtete Teststatistik
     D_obs = compute_D(resid)
 
     # 3) Monte‑Carlo‑Simulation unter H0: weiße Rauschen‑Residuen
@@ -357,12 +334,13 @@ def pena_rodriguez_test_mc(residuals, m=29, mc_runs=1000, random_state=None, pri
         if D_sim >= D_obs:
             count += 1
 
-    # 4) p‑Wert mit „+1“‑Korrektur
+    # p‑Wert mit „+1“‑Korrektur
     p_mc = (count + 1) / (mc_runs + 1)
 
     if print_results:
         print(f"Pena Rodriguez (m={m}, N={mc_runs}): "
               f"{p_mc:.4f}")
+              
     return D_obs, p_mc
 
 
