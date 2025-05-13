@@ -25,15 +25,11 @@ def clean(df):
 def features(df):
     features = ['weekly_sales', 'temperature', 'fuel_price', 'cpi', 'unemployment']
 
-    # Set the figure size
     plt.figure(figsize=(18, 20))
 
-    # Loop through each column in your dataset
     for i, col in enumerate(features):
-     # Create subplots
+     # Subplots erstellen
         plt.subplot(3, 3, i+1)
-    
-        # Plot histogram for the current column
         sns.histplot(data=df, x=col, kde=True)
 
     plt.tight_layout()
@@ -41,27 +37,22 @@ def features(df):
 
 
 def scatter_plot(df, columns=None):
-    # Falls keine Spalten angegeben sind, nutze alle
     if columns is None:
         columns = df.columns.tolist()
     
-    # PairGrid für die gewünschten Spalten
     g = sns.PairGrid(df[columns], diag_sharey=False)
 
-    # Untere Hälfte: Scatterplot
     g.map_lower(sns.scatterplot, s=20, alpha=0.7)
 
-    # Diagonale: Histogramme (mit optionaler Dichtekurve)
     g.map_diag(sns.histplot, kde=True)
 
-    # Obere Hälfte: Korrelationswerte annotieren
     def corrfunc(x, y, **kws):
         # Pearson-Korrelation
         r, p = pearsonr(x.dropna(), y.dropna())
         ax = plt.gca()
         # Text mit r-Wert
         text = f"r = {r:.2f}"
-        # Signifikanzniveaus mit Sternen (optional)
+        # Signifikanzniveaus mit Sternen
         if p < 0.001:
             text += "***"
         elif p < 0.01:

@@ -10,8 +10,6 @@ from statsmodels.tsa.stattools import pacf
 from statsmodels.graphics.tsaplots import plot_acf
 from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.stats.diagnostic import acorr_breusch_godfrey
-from statsmodels.regression.linear_model import OLS
-from statsmodels.tools import add_constant
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.sandbox.stats.runs import runstest_1samp
 from scipy.stats import chi2
@@ -39,10 +37,9 @@ def acf_resid_plot(residuals, lags=29):
     bound = 1.96 / np.sqrt(T)
 
     fig, ax = plt.subplots(figsize=(12, 6))
-    # alpha=None schaltet die automatischen Bänder ab
     plot_acf(resid_clean, lags=lags, alpha=0.05, zero=False, ax=ax)
 
-    # feste ±1.96/√T‑Linien
+    # feste +-1.96/√T‑Linien
     ax.axhline(bound,  linestyle='--', linewidth=1)
     ax.axhline(-bound, linestyle='--', linewidth=1)
 
@@ -125,10 +122,10 @@ def monti_test(residuals, store_num, model, m, print_results = True):
 
     # ACF bis Lag m berechnen
     pacf_vals = pacf(resid, nlags=m, method='ywadjusted')
-    # r[0] = PACF bei Lag 1, r[1] = Lag 2, usw.
+    # r[0] = PACF bei Lag 1, r[1] = Lag 2 usw
     r = pacf_vals[1:]  # Länge = m
 
-    # Monti-Teststatistik berechnen:
+    # Monti Teststatistik berechnen
     Q_M = 0.0
     for k in range(1, m+1):
         # r[k-1] ist die partielle Autokorrelation bei Lag k
@@ -137,7 +134,7 @@ def monti_test(residuals, store_num, model, m, print_results = True):
             Q_M += (r[k-1]**2) / (n - k)
     Q_M *= n * (n + 2)
 
-    # Freiheitsgrade:
+    # Freiheitsgrade
     if model == "SARIMA":
         df = m - (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
         if df < 1:
@@ -145,7 +142,7 @@ def monti_test(residuals, store_num, model, m, print_results = True):
     if model == "Naive":
         df = m
 
-    # p-Wert aus der Chi-Quadrat-Verteilung:
+    # p-Wert aus der Chi-Quadrat-Verteilung
     m_pvalue = 1 - chi2.cdf(Q_M, df)
     
     if print_results:
@@ -184,15 +181,15 @@ def fisher_test(residuals, store_num, model, version, m, print_results=True):
         Q_R += weight * r[k-1]**2 / (n - k)
     Q_R *= n * (n + 2)
     
-    # Freiheitsgrade:
+    # Freiheitsgrade
     if model == "SARIMA":
         df = m - (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
         if df < 1:
-            df = m  # fallback
+            df = m
     if model == "Naive":
         df = m
     
-    # p-Wert aus der Chi-Quadrat-Verteilung:
+    # p-Wert aus der Chi-Quadrat-Verteilung
     p_value = 1 - chi2.cdf(Q_R, df)
     
     if print_results:
@@ -218,13 +215,13 @@ def breusch_godfrey_test_naive(sales, lags=5, print_results=True):
     
     # Vorhersage nach saisonal naivem Modell
     y_hat = np.roll(sales, 52)
-    y_hat[:52] = np.nan  # Vorhersage nicht möglich für erste s Werte
+    y_hat[:52] = np.nan  # Vorhersage nicht möglich für erste 52 Werte
 
     # Residuen
     residuals = sales - y_hat
     residuals = residuals[52:]  # NaNs am Anfang entfernen
 
-    # DataFrame mit Residuen und ihren Lags
+    # Dataframe mit Residuen und ihren Lags
     df = pd.DataFrame({'resid': residuals})
     for i in range(1, lags + 1):
         df[f'resid_lag{i}'] = df['resid'].shift(i)
@@ -276,28 +273,27 @@ def pena_rodriguez_test_original(residuals, store_num, model, m=29, print_result
     resid = resid[~np.isnan(resid)]
     n = resid.size
 
-    # 2) Sample-ACF bis Lag m
-    acf_vals = acf(resid, nlags=m, fft=False)  # acf_vals[0]==1, dann 1..m
-    r = acf_vals[1:]                            # r₁,…,rₘ
+    # Sample-ACF bis Lag m
+    acf_vals = acf(resid, nlags=m, fft=False)
+    r = acf_vals[1:]                           
 
-    # 3) Autokorrelationsmatrix und D_m
-    Rm = toeplitz(np.r_[1.0, r])                # Gl. (2.6)
+    # Autokorrelationsmatrix und D_m
+    Rm = toeplitz(np.r_[1.0, r])                
     det_Rm = np.linalg.det(Rm)
-    D_stat = n * (1.0 - det_Rm**(1.0/m))         # Gl. (2.7)
+    D_stat = n * (1.0 - det_Rm**(1.0/m))         
 
     if model == "SARIMA":
-    # 4) Gamma-Parameter (Shape–Rate) aus Gl. (2.9) & (2.10)
+    # Gamma-Parameter
         delta = (m + 1) - 2*(order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
-    # gemeinsamer Nenner B = 2[(m+1)(2m+1) − 6m(p+q)]
+    # gemeinsamer Nenner B = 2[(m+1)(2m+1) − 6m(p+q+P+Q)]
         B = (m+1)*(2*m+1) - 6*m*(order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
     if model == "Naive":
         delta = (m + 1)
         B = (m+1)*(2*m+1)
 
-    alpha = (3*m * delta**2) / (2 * B)           # Shape (α)
+    alpha = (3*m * delta**2) / (2 * B)          # Shape (α)
     beta_rate = (3*m * delta) / B               # Rate  (β)
 
-    # SciPy erwartet "scale" = 1/rate
     scale = 1.0 / beta_rate
     p_value = 1 - gamma.cdf(D_stat, a=alpha, scale=scale)
 
@@ -308,7 +304,7 @@ def pena_rodriguez_test_original(residuals, store_num, model, m=29, print_result
 
 def pena_rodriguez_test_mc(residuals, m=29, mc_runs=1000, random_state=None, print_results=True):
 
-    #mit p‑Wert via Monte‑Carlo‑Simulation.
+    #mit p‑Wert via Monte‑Carlo‑Simulation
 
 
     # Residuen bereinigen
@@ -325,7 +321,7 @@ def pena_rodriguez_test_mc(residuals, m=29, mc_runs=1000, random_state=None, pri
     # Beobachtete Teststatistik
     D_obs = compute_D(resid)
 
-    # 3) Monte‑Carlo‑Simulation unter H0: weiße Rauschen‑Residuen
+    # Monte‑Carlo‑Simulation
     rng = np.random.default_rng(random_state)
     count = 0
     for _ in range(mc_runs):
@@ -334,7 +330,7 @@ def pena_rodriguez_test_mc(residuals, m=29, mc_runs=1000, random_state=None, pri
         if D_sim >= D_obs:
             count += 1
 
-    # p‑Wert mit „+1“‑Korrektur
+    # p‑Wert mit +1‑Korrektur
     p_mc = (count + 1) / (mc_runs + 1)
 
     if print_results:

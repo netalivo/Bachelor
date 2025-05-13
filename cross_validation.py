@@ -16,7 +16,7 @@ def cross_validation_SARIMA(sales, order, seasonal_order, print_results=True):
     # Expanding Window Cross-Validation
     # Starte mit dem Trainingsset der Größe 'train_size' und erweitere es in jedem Schritt um einen Datenpunkt
     for i in range(train_size, len(sales)):
-        #Trainingsdaten: von Beginn der Zeitreihe bis zum aktuellen Index i
+        # Trainingsdaten: von Beginn der Zeitreihe bis zum aktuellen Index i
         train_data = sales.iloc[:i]
         # Testdaten: der direkt folgende Datenpunkt (One-Step-Ahead)
         test_data = sales.iloc[i:i+1]
@@ -24,12 +24,12 @@ def cross_validation_SARIMA(sales, order, seasonal_order, print_results=True):
         try:
             model_cv = build_SARIMA(train_data, order=order, seasonal_order=seasonal_order)
         
-            #One-Step-Ahead Prognose
+            # One-Step-Ahead Prognose
             forecast = model_cv.forecast(steps=1)
-            #Error berechnen
+            # Error berechnen
             error = test_data.iloc[0] - forecast.iloc[0]
         
-            # Speichere das Datum, den tatsächlichen Wert, die Prognose und den Fehler
+            # Datum, den tatsächlichen Wert, die Prognose und den Fehler speichern
             cv_results.append({
                 'date': sales.index[i],
                 'actual': test_data.iloc[0],
@@ -40,10 +40,10 @@ def cross_validation_SARIMA(sales, order, seasonal_order, print_results=True):
             print(f"Fehler bei Index {i}: {e}")
         continue
 
-    # Ergebnisse in ein DataFrame umwandeln
+    # Ergebnisse in ein dataframe umwandeln
     cv_df = pd.DataFrame(cv_results)
 
-    # Berechnung des RMSE (Root Mean Squared Error) als Performance-Metrik
+    # Berechnung des RMSE (Root Mean Squared Error)
     rmse = np.sqrt(mean_squared_error(cv_df['actual'], cv_df['forecast']))
     print("Cross-Validation RMSE:", rmse)
 
@@ -72,7 +72,7 @@ def cross_validation_naive(sales, seasonal_period=52, print_results=True):
     # Expanding Window Cross-Validation
     # Starte mit dem Trainingsset der Größe 'train_size' und erweitere es in jedem Schritt um einen Datenpunkt
     for i in range(train_size, len(sales)):
-        # Prüfe, ob genügend Daten vorhanden sind, um die saisonale Prognose zu bilden
+        # Prüfen ob genügend Daten vorhanden sind, um die saisonale Prognose zu bilden
         if i - seasonal_period < 0:
             continue
         
@@ -81,7 +81,7 @@ def cross_validation_naive(sales, seasonal_period=52, print_results=True):
         test_value = sales.iloc[i]
         error = test_value - forecast
         
-        # Speichere das Datum, den tatsächlichen Wert, die Prognose und den Fehler
+        # Datum, den tatsächlichen Wert, die Prognose und den Fehler speichern
         cv_results.append({
             'date': sales.index[i],
             'actual': test_value,
@@ -136,12 +136,12 @@ def cv_SARIMA_all_stores(filename, whichorder):
 
         cv_df, _ = cross_validation_SARIMA(sales, order, seasonal_order, print_results=False)
         
-        # Füge die Store-Nummer hinzu
+        # Store-Nummer hinzufügen
         cv_df['store'] = store
         
         results_list.append(cv_df)
     
-    # Kombiniere alle Ergebnisse in einem DataFrame
+    # Ergebnisse in ein Dataframe umwandeln
     all_cv_results = pd.concat(results_list)
     return all_cv_results
 
@@ -163,11 +163,11 @@ def cv_naive_all_stores(filename):
 
         cv_df = cross_validation_naive(sales, print_results=False)
         
-        # Füge die Store-Nummer hinzu
+        # Store-Nummer hinzufügen
         cv_df['store'] = store
         
         results_list.append(cv_df)
     
-    # Kombiniere alle Ergebnisse in einem DataFrame
+    # Ergebnisse in ein dataframe umwandeln
     all_cv_results = pd.concat(results_list)
     return all_cv_results

@@ -36,7 +36,6 @@ def seasonal_subseries_plot(sales, date_col='date', value_col='weekly_sales'):
     else:
         df = sales.copy()
     
-    # Stelle sicher, dass das Datum ein Datetime-Typ ist
     df[date_col] = pd.to_datetime(df[date_col])
     
     # Extrahiere Jahr und Kalenderwoche
@@ -47,7 +46,7 @@ def seasonal_subseries_plot(sales, date_col='date', value_col='weekly_sales'):
     # Sortieren
     df.sort_values([date_col], inplace=True)
     
-    # FacetGrid: pro Kalenderwoche ein Panel, z.B. 8 pro Zeile
+    # FacetGrid: pro Kalenderwoche ein Panel
     g = sns.FacetGrid(df, col='week_of_year', col_wrap=8, sharey=True, sharex=False, height=2.5)
 
     def _plot_subseries(data, color=None, **kwargs):
@@ -89,20 +88,19 @@ def decompose(sales):
 
 
 def lag_plot(sales, max_lag=12):
-    # Erstelle ein Gitter von Subplots (z.B. 2 Zeilen, 3 Spalten für max_lag=6)
-    rows = (max_lag + 2) // 3  # einfache Heuristik für die Anzahl der Zeilen
+    # Gitter von Subplots erstellen
+    rows = (max_lag + 2) // 3  # Anzahl der Zeilen berechnen
     cols = 3
     fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(12, 4 * rows))
-    axes = axes.flatten()  # Einfacher Zugriff über ein eindimensionales Array
+    axes = axes.flatten()
     
     # Erstelle für jeden Lag einen Plot
     for i in range(1, max_lag + 1):
         ax = axes[i - 1]
-        plt.sca(ax)  # Setze die aktuelle Achse auf ax
-        pd_lag_plot(sales, i)  # Übergib den Lag als Positionsargument
+        plt.sca(ax)  # aktuelle Achse auf ax setzen
+        pd_lag_plot(sales, i)  # Lag als Positionsargument übergeben
         ax.set_title(f"Lag = {i}")
     
-    # Falls nicht alle Subplots benötigt werden, verstecke die übrigen
     for j in range(max_lag, len(axes)):
         axes[j].set_visible(False)
     
