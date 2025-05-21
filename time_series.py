@@ -69,18 +69,6 @@ def seasonal_subseries_plot(sales, date_col='date', value_col='weekly_sales'):
     plt.show()
 
 
-def acf_plot(sales, lags=40):
-    sales_clean = sales.dropna()
-
-    plt.figure(figsize=(12, 6))
-    plot_acf(sales, lags=30)
-    plt.title('Autokorrelationsplot der Sales')
-    plt.xlabel('Lags')
-    plt.ylabel('Autokorrelation')
-    plt.grid(True)
-    plt.show()
-
-
 def decompose(sales):
     decomposition = seasonal_decompose(sales, model='additive', period=52)
     fig = decomposition.plot()

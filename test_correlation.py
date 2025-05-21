@@ -31,7 +31,7 @@ def residual_plot(residuals):
 
 # if all autocorrelations are within the threshold limits, 
 # indicates that the residuals are behaving like white noise
-def acf_resid_plot(residuals, lags=29):
+def acf_resid_plot(residuals, lags, print_results):
     resid_clean = residuals.dropna()
     T = len(resid_clean)
     bound = 1.96 / np.sqrt(T)
@@ -47,7 +47,24 @@ def acf_resid_plot(residuals, lags=29):
     ax.set_xlabel('Lags')
     ax.set_ylabel('Autokorrelation')
     ax.grid(True)
-    plt.show()
+    if print_results:
+        plt.show()
+
+
+
+def count_spikes(residuals, lags):
+    resid_clean = residuals.dropna()
+    T = len(resid_clean)
+    bound = 1.96 / np.sqrt(T)
+
+    acf_vals = acf(resid_clean, nlags=lags, fft=False)
+    acf_lags = acf_vals[1:]
+
+    n_pos = np.sum(acf_lags >  bound)
+    n_neg = np.sum(acf_lags < -bound)
+    n_total = n_pos + n_neg
+
+    return n_total
 
 
 

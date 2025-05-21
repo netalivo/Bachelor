@@ -6,7 +6,7 @@ import pandas as pd
 def build_naive_model(sales, seasonal_period = 52):
     fitted_values = sales.shift(seasonal_period)
     residuals = sales - fitted_values
-    return residuals.dropna(), fitted_values
+    return residuals.dropna(), fitted_values.dropna()
 
 
 def naive_for_all_stores(filename):

@@ -1,4 +1,5 @@
 from scipy.stats import ttest_1samp, wilcoxon, binomtest, kstest, norm
+from statsmodels.stats.descriptivestats import sign_test
 import numpy as np
 
 
@@ -35,6 +36,14 @@ def binomial_test(residuals, print_results=True):
         print(f"Binomial Test: {b_pvalue:.4f}")
 
     return n_total, n_pos, b_pvalue
+
+def vorzeichen_test(residuals, print_results=True):
+    s_stat, s_pvalue = sign_test(residuals)
+
+    if print_results:
+        print(f"Sign Test: {s_pvalue:.4f}")
+    
+    return s_stat, s_pvalue
 
 
 def z_test(residuals, print_results=True):
