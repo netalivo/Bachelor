@@ -17,12 +17,29 @@ def t_test(residuals, print_results=True):
 def wilcoxon_test(residuals, print_results=True):
     resid_clean = residuals.dropna()
 
-    w_stat, w_pvalue = wilcoxon(resid_clean)
+    w_stat, w_pvalue = wilcoxon(resid_clean, method='exact')
 
     if print_results:
         print(f"Wilcoxon Test: {w_pvalue:.4f}")
 
     return w_stat, w_pvalue
+
+
+def vorzeichen_test(residuals, print_results=True):
+    s_stat, s_pvalue = sign_test(residuals)
+
+    if print_results:
+        print(f"Sign Test: {s_pvalue:.4f}")
+    
+    return s_stat, s_pvalue
+
+
+
+
+
+
+
+
 
 
 def binomial_test(residuals, print_results=True):
@@ -37,13 +54,6 @@ def binomial_test(residuals, print_results=True):
 
     return n_total, n_pos, b_pvalue
 
-def vorzeichen_test(residuals, print_results=True):
-    s_stat, s_pvalue = sign_test(residuals)
-
-    if print_results:
-        print(f"Sign Test: {s_pvalue:.4f}")
-    
-    return s_stat, s_pvalue
 
 
 def z_test(residuals, print_results=True):
