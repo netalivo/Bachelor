@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 
-from model_SARIMA import optimal_orders_5
+from model_SARIMA import *
 
 from statsmodels.tsa.stattools import acf
 from statsmodels.tsa.stattools import pacf
@@ -71,13 +71,15 @@ def count_spikes(residuals, lags):
 def box_pierce_test(residuals, store_num, model, sample = "IS", lags=29, print_results=True):
     resid_clean = residuals.dropna()
 
-    sarima_params  = optimal_orders_5.get(str(store_num))
+    sarima_params  = optimal_orders_70.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
 
     if model == "SARIMA":
         freedom = (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
     if model == "Naive":
+        freedom = 0
+    if model == "Additive":
         freedom = 0
 
     if sample == "IS":
@@ -100,13 +102,15 @@ def box_pierce_test(residuals, store_num, model, sample = "IS", lags=29, print_r
 def ljung_box_test(residuals, store_num, model, sample = "IS", lags=29, print_results=True):
     resid_clean = residuals.dropna()
 
-    sarima_params  = optimal_orders_5.get(str(store_num))
+    sarima_params  = optimal_orders_70.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
 
     if model == "SARIMA":
         freedom = (order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
     if model == "Naive":
+        freedom = 0
+    if model == "Additive":
         freedom = 0
 
     if sample == "IS":
@@ -133,7 +137,7 @@ def monti_test(residuals, store_num, model, m, print_results = True):
         resid = np.array(residuals)[~np.isnan(residuals)]
     n = len(resid)
 
-    sarima_params  = optimal_orders_5.get(str(store_num))
+    sarima_params  = optimal_orders_70.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
 
@@ -158,6 +162,8 @@ def monti_test(residuals, store_num, model, m, print_results = True):
             df = m
     if model == "Naive":
         df = m
+    if model == "Additive":
+        df = m
 
     # p-Wert aus der Chi-Quadrat-Verteilung
     m_pvalue = 1 - chi2.cdf(Q_M, df)
@@ -176,7 +182,7 @@ def fisher_test(residuals, store_num, model, version, m, print_results=True):
         resid = np.array(residuals)[~np.isnan(residuals)]
     n = len(resid)
 
-    sarima_params  = optimal_orders_5.get(str(store_num))
+    sarima_params  = optimal_orders_70.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
     
@@ -204,6 +210,8 @@ def fisher_test(residuals, store_num, model, version, m, print_results=True):
         if df < 1:
             df = m
     if model == "Naive":
+        df = m
+    if model == "Additive":
         df = m
     
     # p-Wert aus der Chi-Quadrat-Verteilung
@@ -280,7 +288,7 @@ def breusch_godfrey_oos(residuals, lags=5):
 
 def pena_rodriguez_test_original(residuals, store_num, model, m=29, print_results=True):
 
-    sarima_params  = optimal_orders_5.get(str(store_num))
+    sarima_params  = optimal_orders_70.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
     residuals = np.asarray(residuals)
@@ -361,7 +369,7 @@ def pena_rodriguez_test_mc(residuals, m=29, mc_runs=1000, random_state=None, pri
 def run_test(residuals, print_results=True):
     resid_clean = residuals.dropna()
 
-    rt_zstat, rt_pvalue = runstest_1samp(resid_clean, correction=True)
+    rt_zstat, rt_pvalue = runstest_1samp(resid_clean)
 
     if print_results:
         print(f"Run Test: {rt_pvalue:.4f}")
