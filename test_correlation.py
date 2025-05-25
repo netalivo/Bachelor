@@ -312,7 +312,7 @@ def pena_rodriguez_test_original(residuals, store_num, model, m=29, print_result
         delta = (m + 1) - 2*(order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
     # gemeinsamer Nenner B = 2[(m+1)(2m+1) − 6m(p+q+P+Q)]
         B = (m+1)*(2*m+1) - 6*m*(order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
-    if model == "Naive":
+    if model == "Additive":
         delta = (m + 1)
         B = (m+1)*(2*m+1)
 

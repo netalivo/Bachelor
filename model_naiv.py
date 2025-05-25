@@ -49,7 +49,7 @@ def build_naive_additive(sales, sample, train_ratio=0.7):
         fitted_series = pd.Series(forecasts, index=forecast_index)
         residuals = y_test.loc[fitted_series.index] - fitted_series
 
-    return residuals, fitted_series
+    return residuals, fitted_series, y_train, y_test
 
 
 def additive_for_all_stores(filename, sample):
@@ -58,6 +58,8 @@ def additive_for_all_stores(filename, sample):
     df.columns = df.columns.str.lower()
     residuals_dict = {}
     fitted_values_dict = {}
+    y_test_dict = {}
+    y_train_dict = {}
     
     for store in range(1, 46):
 
@@ -68,15 +70,17 @@ def additive_for_all_stores(filename, sample):
         sales = store_df['weekly_sales'].asfreq('W-FRI')
         
         try:
-            residuals, fitted_values = build_naive_additive(sales, sample)
+            residuals, fitted_values, y_train, y_test = build_naive_additive(sales, sample)
 
             residuals_dict[store] = residuals
             fitted_values_dict[store] = fitted_values
+            y_train_dict[store] = y_train
+            y_test_dict[store] = y_test
         except Exception as e:
             print(f"Fehler bei Store {store}: {e}")
             residuals_dict[store] = None
             
-    return residuals_dict, fitted_values_dict
+    return residuals_dict, fitted_values_dict, y_train_dict, y_test_dict
 
 
 
