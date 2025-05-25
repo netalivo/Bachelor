@@ -223,7 +223,7 @@ def fisher_test(residuals, store_num, model, version, m, print_results=True):
     return Q_R, p_value
 
 
-def breusch_godfrey_test(model, lags=29, print_results=True):
+def breusch_godfrey_test(model, lags, print_results=True):
 
     lm_stat, lm_pvalue, _, _ = acorr_breusch_godfrey(model, nlags=lags)
 
@@ -270,7 +270,7 @@ def breusch_godfrey_test_naive(sales, lags=5, print_results=True):
     return bg_stat, bg_pvalue
 
 
-def breusch_godfrey_oos(residuals, lags=5):
+def breusch_godfrey_oos_alt(residuals, lags=5):
     resid = np.asarray(residuals)[~np.isnan(residuals)]
     df = pd.DataFrame({'resid': resid})
     for i in range(1, lags+1):
@@ -283,6 +283,26 @@ def breusch_godfrey_oos(residuals, lags=5):
     bg_stat = n * aux.rsquared
     bg_pvalue = 1 - chi2.cdf(bg_stat, df=lags)
     return bg_stat, bg_pvalue
+
+
+def breusch_godfrey_manuell(errors, lags, print_results=True):
+
+    # 1) In numpy-Array umwandeln und NaNs entfernen
+    err = np.asarray(errors)
+    err = err[~np.isnan(err)]
+
+    # 2) Einfache Regression: err_t = const + u_t
+    #    X ist nur die Konstante
+    X = np.ones((len(err), 1))
+    ols_res = sm.OLS(err, X).fit()
+
+    # 3) Breusch-Godfrey Test auf den so erhaltenen Residuen (das sind deine Errors)
+    lm_stat, p_value, _, _ = acorr_breusch_godfrey(ols_res, nlags=lags)
+
+    if print_results:
+        print(f"Breusch–Godfrey (OOS): {p_value:.4f}")
+
+    return lm_stat, p_value
 
 
 
