@@ -384,6 +384,151 @@ def pena_rodriguez_test_mc(residuals, m=29, mc_runs=1000, random_state=None, pri
               
     return D_obs, p_mc
 
+def compute_D(resid, m):
+    n = resid.size
+    acf_vals = acf(resid, nlags=m, fft=False, adjusted=False, missing='none')[1:]
+    Rm = toeplitz(np.r_[1.0, acf_vals])
+    sign, logdet = np.linalg.slogdet(Rm)
+    return n * (1.0 - np.exp(logdet / m))
+
+
+
+def pena_rodriguez_test_mc_neu(y,residuals, store_num, model, m=29, mc_runs=1000, random_state=None, test_size=70, print_results=True):
+    """
+    Monte-Carlo Pena–Rodriguez-Test auf Autokorrelation der Residuen.
+
+    Unterstützte Modelle:
+    - 'SARIMA': In-Sample-Residuentest
+    - 'SARIMA_OOS': Out-of-Sample Forecast-Error-Test (benötigt test_size)
+    - 'Naive': Naiver Random-Walk-Test
+
+    Parameters
+    ----------
+    y : array-like
+        Originale Zeitreihe (für OOS: gesamter Verlauf).  
+    residuals : array-like
+        In-Sample-Residuen (für 'SARIMA' und 'Naive').
+    store_num : hashable
+        Schlüssel zum Abruf der Modellordner aus optimal_orders_70.
+    model : {'SARIMA', 'SARIMA_OOS', 'Naive'}
+        Zu testendes Null-Modell.
+    optimal_orders_70 : dict
+        Mapping store_num -> {'order':(...), 'seasonal_order':(...)}
+    m : int
+        Anzahl der Autokorrelations-Lags.
+    mc_runs : int
+        Anzahl der Monte-Carlo-Durchläufe.
+    random_state : int or None
+        Seed für reproduzierbare Simulation.
+    test_size : int or None
+        Länge der Out-of-Sample-Testperiode (nur für 'SARIMA_OOS').
+    print_results : bool
+        Ausgabe der p-Werte.
+
+    Returns
+    -------
+    D_obs : float
+        Beobachtete Teststatistik.
+    p_mc : float
+        Monte-Carlo-p-Wert.
+    """
+    
+    rng = np.random.default_rng(random_state)
+    count = 0
+
+    # SARIMA-Parameter aus optimal_orders_70
+    sarima_params = optimal_orders_70.get(str(store_num))
+    order = tuple(sarima_params["order"])
+    seasonal_order = tuple(sarima_params["seasonal_order"])
+
+    if model == "SARIMA":
+        # In-Sample-Test
+        resid = np.asarray(residuals, float)[~np.isnan(residuals)]
+        D_obs = compute_D(resid, m)
+        n = resid.size
+        sarima_mod = SARIMAX(y,
+                             order=order,
+                             seasonal_order=seasonal_order)
+        sarima_res = sarima_mod.fit(disp=False)
+        sigma2 = np.nanvar(sarima_res.resid, ddof=1)
+
+        for _ in range(mc_runs):
+            eps = rng.standard_normal(n) * np.sqrt(sigma2)
+            sim = sarima_res.simulate(nsimulations=n, measurement_shocks=eps)
+            sim_res = SARIMAX(sim,
+                              order=order,
+                              seasonal_order=seasonal_order).fit(disp=False)
+            if compute_D(sim_res.resid[~np.isnan(sim_res.resid)], m) >= D_obs:
+                count += 1
+
+    elif model == "SARIMA_OOS":
+        # Out-of-Sample-Test
+        if test_size is None or test_size <= 0:
+            raise ValueError("Für SARIMA_OOS muss test_size > 0 angegeben sein.")
+        T = len(y)
+        n_train = T - test_size
+        y_train = np.asarray(y[:n_train], float)
+        y_test = np.asarray(y[n_train:], float)
+
+        # Fit auf Trainingsdaten
+        sarima_mod = SARIMAX(y_train,
+                             order=order,
+                             seasonal_order=seasonal_order)
+        sarima_res = sarima_mod.fit(disp=False)
+        sigma2 = np.nanvar(sarima_res.resid, ddof=1)
+
+        # Beobachtete Forecast-Residuen
+        forecast = sarima_res.get_forecast(steps=test_size).predicted_mean
+        resid_oos = y_test - forecast
+        D_obs = compute_D(resid_oos, m)
+        n = test_size
+
+        for _ in range(mc_runs):
+            eps_all = rng.standard_normal(T) * np.sqrt(sigma2)
+            sim_all = sarima_res.simulate(nsimulations=T, measurement_shocks=eps_all)
+
+            sim_train = sim_all[:n_train]
+            sim_test = sim_all[n_train:]
+
+            sim_mod = SARIMAX(sim_train,
+                              order=order,
+                              seasonal_order=seasonal_order).fit(disp=False)
+            sim_pred = sim_mod.get_forecast(steps=test_size).predicted_mean
+            resid_sim_o = sim_test - sim_pred
+
+            if compute_D(resid_sim_o, m) >= D_obs:
+                count += 1
+
+    elif model == "Naive":
+        # Naiver Random-Walk-Test
+        resid_naive = np.asarray(residuals, float)[~np.isnan(residuals)]
+        D_obs = compute_D(resid_naive, m)
+        n = resid_naive.size
+        sigma_naive = resid_naive.std(ddof=1)
+
+        for _ in range(mc_runs):
+            eps = rng.standard_normal(n) * sigma_naive
+            sim = np.empty(n + 1)
+            sim[0] = y[0]
+            for t in range(1, n + 1):
+                sim[t] = sim[t-1] + eps[t-1]
+            resid_sim = sim[1:] - sim[:-1]
+            if compute_D(resid_sim, m) >= D_obs:
+                count += 1
+
+    else:
+        raise ValueError(f"Unbekanntes Modell: {model}")
+
+    p_mc = (count + 1) / (mc_runs + 1)
+
+    if print_results:
+        print(f"Pena–Rodriguez MC (Model={model}, m={m}, N={mc_runs}): p-value={p_mc:.4f}")
+
+    return D_obs, p_mc
+
+
+
+
 
 
 def run_test(residuals, print_results=True):
