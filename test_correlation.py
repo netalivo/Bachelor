@@ -29,8 +29,6 @@ def residual_plot(residuals):
     plt.show()
 
 
-# if all autocorrelations are within the threshold limits, 
-# indicates that the residuals are behaving like white noise
 def acf_resid_plot(residuals, lags, print_results):
     resid_clean = residuals.dropna()
     T = len(resid_clean)
@@ -71,7 +69,7 @@ def count_spikes(residuals, lags):
 def box_pierce_test(residuals, store_num, model, sample = "IS", lags=29, print_results=True):
     resid_clean = residuals.dropna()
 
-    sarima_params  = optimal_orders_70.get(str(store_num))
+    sarima_params  = optimal_orders_70_new.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
 
@@ -102,7 +100,7 @@ def box_pierce_test(residuals, store_num, model, sample = "IS", lags=29, print_r
 def ljung_box_test(residuals, store_num, model, sample = "IS", lags=29, print_results=True):
     resid_clean = residuals.dropna()
 
-    sarima_params  = optimal_orders_70.get(str(store_num))
+    sarima_params  = optimal_orders_70_new.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
 
@@ -137,20 +135,18 @@ def monti_test(residuals, store_num, model, m, print_results = True):
         resid = np.array(residuals)[~np.isnan(residuals)]
     n = len(resid)
 
-    sarima_params  = optimal_orders_70.get(str(store_num))
+    sarima_params  = optimal_orders_70_new.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
 
     # ACF bis Lag m berechnen
     pacf_vals = pacf(resid, nlags=m, method='ywadjusted')
-    # r[0] = PACF bei Lag 1, r[1] = Lag 2 usw
-    r = pacf_vals[1:]  # Länge = m
+    r = pacf_vals[1:]
 
-    # Monti Teststatistik berechnen
+    # Monti Teststatistik
     Q_M = 0.0
     for k in range(1, m+1):
-        # r[k-1] ist die partielle Autokorrelation bei Lag k
-        # Wenn n-k <= 0, ist die Datenlänge zu klein für k
+        # r[k-1] ist partielle Autokorrelation bei Lag k
         if (n - k) > 0:
             Q_M += (r[k-1]**2) / (n - k)
     Q_M *= n * (n + 2)
@@ -182,7 +178,7 @@ def fisher_test(residuals, store_num, model, version, m, print_results=True):
         resid = np.array(residuals)[~np.isnan(residuals)]
     n = len(resid)
 
-    sarima_params  = optimal_orders_70.get(str(store_num))
+    sarima_params  = optimal_orders_70_new.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
     
@@ -192,9 +188,9 @@ def fisher_test(residuals, store_num, model, version, m, print_results=True):
     elif version == "pacf":
         acf_vals = pacf(resid, nlags=m, method='ywadjusted')
 
-    r = acf_vals[1:]  # ignoriert den Lag-0-Wert
+    r = acf_vals[1:]
     
-    # Fisher-Teststatistik berechnen:
+    # Fisher Teststatistik
     Q_R = 0.0
     for k in range(1, m+1):
         # Vermeide Division durch 0
@@ -233,70 +229,16 @@ def breusch_godfrey_test(model, lags, print_results=True):
     return lm_stat, lm_pvalue
 
 
-def breusch_godfrey_test_naive(sales, lags=5, print_results=True):
-    sales = np.asarray(sales)
-    if len(sales) <= 52 + lags:
-        raise ValueError("Zeitreihe ist zu kurz für die gewählte Saisonalität und Lags.")
-    
-    # Vorhersage nach saisonal naivem Modell
-    y_hat = np.roll(sales, 52)
-    y_hat[:52] = np.nan  # Vorhersage nicht möglich für erste 52 Werte
-
-    # Residuen
-    residuals = sales - y_hat
-    residuals = residuals[52:]  # NaNs am Anfang entfernen
-
-    # Dataframe mit Residuen und ihren Lags
-    df = pd.DataFrame({'resid': residuals})
-    for i in range(1, lags + 1):
-        df[f'resid_lag{i}'] = df['resid'].shift(i)
-
-    df = df.dropna()
-    
-    y_aux = df['resid']
-    X_aux = df.drop(columns='resid')
-    X_aux = sm.add_constant(X_aux)
-
-    # Hilfsregression
-    aux_model = sm.OLS(y_aux, X_aux).fit()
-    R2 = aux_model.rsquared
-    n = len(y_aux)
-    bg_stat = n * R2
-    bg_pvalue = 1 - chi2.cdf(bg_stat, df=lags)
-
-    if print_results:
-        print(f"Breusch Godfrey: {bg_pvalue:.4f}")
-
-    return bg_stat, bg_pvalue
-
-
-def breusch_godfrey_oos_alt(residuals, lags=5):
-    resid = np.asarray(residuals)[~np.isnan(residuals)]
-    df = pd.DataFrame({'resid': resid})
-    for i in range(1, lags+1):
-        df[f'lag{i}'] = df['resid'].shift(i)
-    df = df.dropna()
-    y_aux = df['resid']
-    X_aux = sm.add_constant(df.drop(columns='resid'))
-    aux = sm.OLS(y_aux, X_aux).fit()
-    n = len(y_aux)
-    bg_stat = n * aux.rsquared
-    bg_pvalue = 1 - chi2.cdf(bg_stat, df=lags)
-    return bg_stat, bg_pvalue
-
-
 def breusch_godfrey_manuell(errors, lags, print_results=True):
 
-    # 1) In numpy-Array umwandeln und NaNs entfernen
     err = np.asarray(errors)
     err = err[~np.isnan(err)]
 
-    # 2) Einfache Regression: err_t = const + u_t
-    #    X ist nur die Konstante
+    # Einfache Regression: err_t = const + u_t
     X = np.ones((len(err), 1))
     ols_res = sm.OLS(err, X).fit()
 
-    # 3) Breusch-Godfrey Test auf den so erhaltenen Residuen (das sind deine Errors)
+    # Breusch-Godfrey Test
     lm_stat, p_value, _, _ = acorr_breusch_godfrey(ols_res, nlags=lags)
 
     if print_results:
@@ -308,7 +250,7 @@ def breusch_godfrey_manuell(errors, lags, print_results=True):
 
 def pena_rodriguez_test_original(residuals, store_num, model, m=29, print_results=True):
 
-    sarima_params  = optimal_orders_70.get(str(store_num))
+    sarima_params  = optimal_orders_70_new.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
     residuals = np.asarray(residuals)
@@ -319,25 +261,33 @@ def pena_rodriguez_test_original(residuals, store_num, model, m=29, print_result
     n = resid.size
 
     # Sample-ACF bis Lag m
-    acf_vals = acf(resid, nlags=m, fft=False)
+    acf_vals = acf(resid, nlags=m-1, fft=False)
     r = acf_vals[1:]                           
 
-    # Autokorrelationsmatrix und D_m
+    # Autokorrelationsmatrix und D
     Rm = toeplitz(np.r_[1.0, r])                
     det_Rm = np.linalg.det(Rm)
     D_stat = n * (1.0 - det_Rm**(1.0/m))         
 
+    
     if model == "SARIMA":
-    # Gamma-Parameter
-        delta = (m + 1) - 2*(order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
-    # gemeinsamer Nenner B = 2[(m+1)(2m+1) − 6m(p+q+P+Q)]
-        B = (m+1)*(2*m+1) - 6*m*(order[0] + order[2] + seasonal_order[0] + seasonal_order[2])
-    if model == "Additive":
-        delta = (m + 1)
-        B = (m+1)*(2*m+1)
+        p_plus_q = order[0] + order[2] + seasonal_order[0] + seasonal_order[2]
 
-    alpha = (3*m * delta**2) / (2 * B)          # Shape (α)
-    beta_rate = (3*m * delta) / B               # Rate  (β)
+        alpha_num   = 3 * m * ((m + 1) - 2 * p_plus_q) * ((m + 1) - 2 * p_plus_q)
+        alpha_denom = 2 * (2 * (m + 1) * (2 * m + 1) - 12 * m * p_plus_q)
+
+        beta_num   = 3 * m * ((m + 1) - 2 * p_plus_q)
+        beta_denom = 2 * (m + 1) * (2 * m + 1) - 12 * m * p_plus_q
+    if model == "Additive":
+        alpha_num = 3*m*(m + 1)*(m + 1)
+        alpha_denom = 2*(2*(m+1)*(2*m+1))
+
+        beta_num = 3*m*(m + 1)
+        beta_denom = 2*(m+1)*(2*m+1)
+
+
+    alpha = alpha_num / alpha_denom
+    beta_rate = beta_num / beta_denom
 
     scale = 1.0 / beta_rate
     p_value = 1 - gamma.cdf(D_stat, a=alpha, scale=scale)
@@ -347,42 +297,30 @@ def pena_rodriguez_test_original(residuals, store_num, model, m=29, print_result
     return D_stat, p_value
 
 
-def pena_rodriguez_test_mc(residuals, m=29, mc_runs=1000, random_state=None, print_results=True):
 
-    #mit p‑Wert via Monte‑Carlo‑Simulation
+def run_test(residuals, print_results=True):
+    resid_clean = residuals.dropna()
 
-
-    # Residuen bereinigen
-    resid = np.asarray(residuals, float)
-    resid = resid[~np.isnan(resid)]
-    n = resid.size
-
-    # Hilfsfunktion zur Berechnung von D_m
-    def compute_D(x):
-        acf_vals = acf(x, nlags=m, fft=False, adjusted=False, missing='none')[1:]      
-        Rm = toeplitz(np.r_[1.0, acf_vals])            
-        return n * (1.0 - np.linalg.det(Rm)**(1.0/m))  
-
-    # Beobachtete Teststatistik
-    D_obs = compute_D(resid)
-
-    # Monte‑Carlo‑Simulation
-    rng = np.random.default_rng(random_state)
-    count = 0
-    for _ in range(mc_runs):
-        sim = rng.standard_normal(n)
-        D_sim = compute_D(sim)
-        if D_sim >= D_obs:
-            count += 1
-
-    # p‑Wert mit +1‑Korrektur
-    p_mc = (count + 1) / (mc_runs + 1)
+    rt_zstat, rt_pvalue = runstest_1samp(resid_clean)
 
     if print_results:
-        print(f"Pena Rodriguez (m={m}, N={mc_runs}): "
-              f"{p_mc:.4f}")
-              
-    return D_obs, p_mc
+        print(f"Run Test: {rt_pvalue:.4f}")
+        
+    return rt_zstat, rt_pvalue
+
+
+def durbin_watson_test(residuals, print_results=True):
+    resid_clean = residuals.dropna()
+
+    dw_stat = durbin_watson(resid_clean)
+    
+    if print_results:
+        print(f"Durbin Watson: {dw_stat:.4f}")
+
+    return dw_stat
+
+
+
 
 def compute_D(resid, m):
     n = resid.size
@@ -391,52 +329,11 @@ def compute_D(resid, m):
     sign, logdet = np.linalg.slogdet(Rm)
     return n * (1.0 - np.exp(logdet / m))
 
+def pena_rodriguez_test_mc(y,residuals, store_num, model, m=29, mc_runs=1000, random_state=None, test_size=70, print_results=True):
 
-
-def pena_rodriguez_test_mc_neu(y,residuals, store_num, model, m=29, mc_runs=1000, random_state=None, test_size=70, print_results=True):
-    """
-    Monte-Carlo Pena–Rodriguez-Test auf Autokorrelation der Residuen.
-
-    Unterstützte Modelle:
-    - 'SARIMA': In-Sample-Residuentest
-    - 'SARIMA_OOS': Out-of-Sample Forecast-Error-Test (benötigt test_size)
-    - 'Naive': Naiver Random-Walk-Test
-
-    Parameters
-    ----------
-    y : array-like
-        Originale Zeitreihe (für OOS: gesamter Verlauf).  
-    residuals : array-like
-        In-Sample-Residuen (für 'SARIMA' und 'Naive').
-    store_num : hashable
-        Schlüssel zum Abruf der Modellordner aus optimal_orders_70.
-    model : {'SARIMA', 'SARIMA_OOS', 'Naive'}
-        Zu testendes Null-Modell.
-    optimal_orders_70 : dict
-        Mapping store_num -> {'order':(...), 'seasonal_order':(...)}
-    m : int
-        Anzahl der Autokorrelations-Lags.
-    mc_runs : int
-        Anzahl der Monte-Carlo-Durchläufe.
-    random_state : int or None
-        Seed für reproduzierbare Simulation.
-    test_size : int or None
-        Länge der Out-of-Sample-Testperiode (nur für 'SARIMA_OOS').
-    print_results : bool
-        Ausgabe der p-Werte.
-
-    Returns
-    -------
-    D_obs : float
-        Beobachtete Teststatistik.
-    p_mc : float
-        Monte-Carlo-p-Wert.
-    """
-    
     rng = np.random.default_rng(random_state)
     count = 0
 
-    # SARIMA-Parameter aus optimal_orders_70
     sarima_params = optimal_orders_70.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
@@ -477,7 +374,7 @@ def pena_rodriguez_test_mc_neu(y,residuals, store_num, model, m=29, mc_runs=1000
         sarima_res = sarima_mod.fit(disp=False)
         sigma2 = np.nanvar(sarima_res.resid, ddof=1)
 
-        # Beobachtete Forecast-Residuen
+        # Prognose Fehler
         forecast = sarima_res.get_forecast(steps=test_size).predicted_mean
         resid_oos = y_test - forecast
         D_obs = compute_D(resid_oos, m)
@@ -527,30 +424,6 @@ def pena_rodriguez_test_mc_neu(y,residuals, store_num, model, m=29, mc_runs=1000
     return D_obs, p_mc
 
 
-
-
-
-
-def run_test(residuals, print_results=True):
-    resid_clean = residuals.dropna()
-
-    rt_zstat, rt_pvalue = runstest_1samp(resid_clean)
-
-    if print_results:
-        print(f"Run Test: {rt_pvalue:.4f}")
-        
-    return rt_zstat, rt_pvalue
-
-
-def durbin_watson_test(residuals, print_results=True):
-    resid_clean = residuals.dropna()
-
-    dw_stat = durbin_watson(resid_clean)
-    
-    if print_results:
-        print(f"Durbin Watson: {dw_stat:.4f}")
-
-    return dw_stat
 
 
 

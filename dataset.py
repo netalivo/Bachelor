@@ -9,7 +9,7 @@ def clean(df):
     # Check for missing values 
     df.info()
 
-    # Check if the 'date' column is a valid date
+    # Check if date column is a valid date
     try:
         df['date'] = pd.to_datetime(df['date'], format='mixed')
         print("All values in 'date' column are valid dates.")

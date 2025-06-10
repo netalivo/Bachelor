@@ -16,9 +16,9 @@ def cross_validation_SARIMA(sales, order, seasonal_order, print_results=True):
     # Expanding Window Cross-Validation
     # Starte mit dem Trainingsset der Größe 'train_size' und erweitere es in jedem Schritt um einen Datenpunkt
     for i in range(train_size, len(sales)):
-        # Trainingsdaten: von Beginn der Zeitreihe bis zum aktuellen Index i
+        # Trainingsdaten
         train_data = sales.iloc[:i]
-        # Testdaten: der direkt folgende Datenpunkt (One-Step-Ahead)
+        # Testdaten
         test_data = sales.iloc[i:i+1]
     
         try:
@@ -29,7 +29,7 @@ def cross_validation_SARIMA(sales, order, seasonal_order, print_results=True):
             # Error berechnen
             error = test_data.iloc[0] - forecast.iloc[0]
         
-            # Datum, den tatsächlichen Wert, die Prognose und den Fehler speichern
+            # Datum, der tatsächliche Wert, die Prognose und den Fehler speichern
             cv_results.append({
                 'date': sales.index[i],
                 'actual': test_data.iloc[0],
@@ -72,7 +72,7 @@ def cross_validation_naive(sales, seasonal_period=52, print_results=True):
     # Expanding Window Cross-Validation
     # Starte mit dem Trainingsset der Größe 'train_size' und erweitere es in jedem Schritt um einen Datenpunkt
     for i in range(train_size, len(sales)):
-        # Prüfen ob genügend Daten vorhanden sind, um die saisonale Prognose zu bilden
+        # Prüfen ob genügend Daten vorhanden sind
         if i - seasonal_period < 0:
             continue
         
@@ -81,7 +81,7 @@ def cross_validation_naive(sales, seasonal_period=52, print_results=True):
         test_value = sales.iloc[i]
         error = test_value - forecast
         
-        # Datum, den tatsächlichen Wert, die Prognose und den Fehler speichern
+        # Datum, der tatsächliche Wert, die Prognose und den Fehler speichern
         cv_results.append({
             'date': sales.index[i],
             'actual': test_value,
@@ -89,7 +89,7 @@ def cross_validation_naive(sales, seasonal_period=52, print_results=True):
             'error': error
         })
     
-    # Ergebnisse in ein DataFrame umwandeln
+    # Ergebnisse in ein dataframe umwandeln
     cv_df = pd.DataFrame(cv_results)
     
     # Berechne RMSE

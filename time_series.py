@@ -38,22 +38,20 @@ def seasonal_subseries_plot(sales, date_col='date', value_col='weekly_sales'):
     
     df[date_col] = pd.to_datetime(df[date_col])
     
-    # Extrahiere Jahr und Kalenderwoche
     df['year'] = df[date_col].dt.year
-    # ISO-Kalenderwoche
     df['week_of_year'] = df[date_col].dt.isocalendar().week
     
     # Sortieren
     df.sort_values([date_col], inplace=True)
     
-    # FacetGrid: pro Kalenderwoche ein Panel
+    # pro Kalenderwoche ein Panel
     g = sns.FacetGrid(df, col='week_of_year', col_wrap=8, sharey=True, sharex=False, height=2.5)
 
     def _plot_subseries(data, color=None, **kwargs):
         # Nach Jahr sortieren, dann Linienplot
         data = data.sort_values('year')
         plt.plot(data['year'], data[value_col], marker='o', color='black')
-        # Horizontaler Mittelwert pro Facet (also pro Woche)
+        # Horizontaler Mittelwert pro Woche
         mean_val = data[value_col].mean()
         plt.axhline(mean_val, color='blue', linestyle='--', alpha=0.7)
     
@@ -82,7 +80,7 @@ def lag_plot(sales, max_lag=12):
     fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(12, 4 * rows))
     axes = axes.flatten()
     
-    # Erstelle für jeden Lag einen Plot
+    # für jeden Lag einen Plot erstellen
     for i in range(1, max_lag + 1):
         ax = axes[i - 1]
         plt.sca(ax)  # aktuelle Achse auf ax setzen
