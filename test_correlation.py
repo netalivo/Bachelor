@@ -334,7 +334,7 @@ def pena_rodriguez_test_mc(y,residuals, store_num, model, m=29, mc_runs=1000, ra
     rng = np.random.default_rng(random_state)
     count = 0
 
-    sarima_params = optimal_orders_70.get(str(store_num))
+    sarima_params = optimal_orders_70_new.get(str(store_num))
     order = tuple(sarima_params["order"])
     seasonal_order = tuple(sarima_params["seasonal_order"])
 

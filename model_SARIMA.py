@@ -51,7 +51,6 @@ def SARIMA_for_all_stores(filename, whichorder):
         sales = store_df['weekly_sales'].asfreq('W-FRI')
 
         if whichorder == 5: params = optimal_orders_5.get(str(store))
-        if whichorder == 70: params = optimal_orders_70.get(str(store))
         if whichorder == 75: params = optimal_orders_70_new.get(str(store))
         
         if params:
@@ -109,7 +108,58 @@ def sarima_params(filename):
 
 
 # SARIMA-Parameter für alle Stores
-optimal_orders_5 = {
+
+# In Arbeit benutzt:
+optimal_orders_70_new = { # Traingingsdaten: 70% der Zeitreihe, Obergrenze: 5, stepwise: True, information_criterion: aic
+    "1":  {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
+    "2":  {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "3":  {"order": [5, 0, 0], "seasonal_order": [0, 0, 2, 52]},
+    "4":  {"order": [0, 1, 2], "seasonal_order": [0, 1, 0, 52]},
+    "5":  {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
+    "6":  {"order": [1, 0, 5], "seasonal_order": [1, 0, 0, 52]},
+    "7":  {"order": [0, 0, 1], "seasonal_order": [0, 1, 0, 52]},
+    "8":  {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "9":  {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
+    "10": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "11": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "12": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "13": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "14": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
+    "15": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "16": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]}, 
+    "17": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
+    "18": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "19": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "20": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "21": {"order": [1, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "22": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "23": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "24": {"order": [1, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "25": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "26": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "27": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "28": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "29": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
+    "30": {"order": [1, 1, 0], "seasonal_order": [0, 0, 1, 52]}, 
+    "31": {"order": [1, 1, 1], "seasonal_order": [1, 0, 0, 52]},
+    "32": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
+    "33": {"order": [0, 1, 0], "seasonal_order": [1, 0, 0, 52]}, 
+    "34": {"order": [1, 0, 0], "seasonal_order": [0, 0, 2, 52]}, 
+    "35": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
+    "36": {"order": [0, 1, 0], "seasonal_order": [1, 0, 0, 52]}, 
+    "37": {"order": [1, 1, 1], "seasonal_order": [0, 1, 0, 52]},
+    "38": {"order": [0, 1, 0], "seasonal_order": [1, 1, 0, 52]}, 
+    "39": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
+    "40": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
+    "41": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
+    "42": {"order": [0, 1, 1], "seasonal_order": [0, 1, 0, 52]},
+    "43": {"order": [0, 1, 1], "seasonal_order": [0, 1, 0, 52]},
+    "44": {"order": [1, 1, 0], "seasonal_order": [0, 0, 1, 52]}, 
+    "45": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]}
+}
+
+# Alt:
+optimal_orders_5 = { # Traingingsdaten: 100% der Zeitreihe, Obergrenze: 5, stepwise: True, information_criterion: aic
     "1": {"order": [1, 1, 1], "seasonal_order": [1, 0, 0, 52]},
     "2": {"order": [4, 0, 3], "seasonal_order": [1, 0, 1, 52]},
     "3": {"order": [1, 1, 1], "seasonal_order": [2, 0, 0, 52]},
@@ -157,7 +207,7 @@ optimal_orders_5 = {
     "45": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]}
 }
 
-optimal_orders_10 = {
+optimal_orders_10 = { # Traingingsdaten: 100% der Zeitreihe, Obergrenze: 10, stepwise: True, information_criterion: aic
     "1": {"order": [6, 1, 0], "seasonal_order": [1, 0, 1, 52]},
     "2": {"order": [1, 0, 0], "seasonal_order": [0, 0, 3, 52]},
     "3": {"order": [1, 1, 1], "seasonal_order": [2, 0, 0, 52]},
@@ -205,7 +255,7 @@ optimal_orders_10 = {
     "45": {"order": [2, 0, 0], "seasonal_order": [0, 0, 3, 52]}
 }
 
-optimal_orders_notstepwise = {
+optimal_orders_notstepwise = { # Traingingsdaten: 100% der Zeitreihe, Obergrenze: 5, stepwise: False, information_criterion: aic
     "1": {"order": [4, 1, 0], "seasonal_order": [1, 0, 0, 52]},
     "2": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
     "3": {"order": [1, 1, 1], "seasonal_order": [2, 0, 0, 52]},
@@ -253,7 +303,7 @@ optimal_orders_notstepwise = {
     "45": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]}
 }
 
-optimal_orders_aicc = {
+optimal_orders_aicc = { # Traingingsdaten: 100% der Zeitreihe, Obergrenze: 5, stepwise: True, information_criterion: aicc
     "1": {"order": [1, 1, 1], "seasonal_order": [1, 0, 0, 52]},
     "2": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
     "3": {"order": [1, 1, 1], "seasonal_order": [1, 0, 0, 52]},
@@ -301,149 +351,7 @@ optimal_orders_aicc = {
     "45": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]}
 }
 
-optimal_orders_60 = {
-    "1":  {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "2":  {"order": [1, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "3":  {"order": [1, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "4":  {"order": [1, 0, 0], "seasonal_order": [0, 0, 0, 52]},
-    "5":  {"order": [1, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "6":  {"order": [5, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "7":  {"order": [0, 0, 1], "seasonal_order": [0, 1, 0, 52]},
-    "8":  {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "9":  {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "10": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "11": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "12": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "13": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "14": {"order": [2, 0, 2], "seasonal_order": [0, 0, 0, 52]},
-    "15": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "16": {"order": [0, 0, 0], "seasonal_order": [0, 1, 0, 52]},
-    "17": {"order": [0, 0, 0], "seasonal_order": [0, 1, 0, 52]},
-    "18": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "19": {"order": [1, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "20": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "21": {"order": [1, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "22": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "23": {"order": [1, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "24": {"order": [1, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "25": {"order": [1, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "26": {"order": [1, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "27": {"order": [1, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "28": {"order": [2, 0, 0], "seasonal_order": [0, 1, 0, 52]},
-    "29": {"order": [2, 0, 2], "seasonal_order": [1, 0, 1, 52]},
-    "30": {"order": [0, 1, 0], "seasonal_order": [1, 0, 0, 52]},
-    "31": {"order": [1, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "32": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "33": {"order": [0, 1, 0], "seasonal_order": [1, 0, 0, 52]},
-    "34": {"order": [1, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "35": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "36": {"order": [1, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "37": {"order": [0, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "38": {"order": [0, 1, 0], "seasonal_order": [1, 1, 0, 52]},
-    "39": {"order": [2, 0, 2], "seasonal_order": [1, 0, 1, 52]},
-    "40": {"order": [1, 0, 0], "seasonal_order": [0, 0, 1, 52]},
-    "41": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "42": {"order": [0, 0, 0], "seasonal_order": [0, 1, 0, 52]},
-    "43": {"order": [0, 1, 0], "seasonal_order": [1, 1, 0, 52]},
-    "44": {"order": [1, 1, 0], "seasonal_order": [0, 0, 1, 52]},
-    "45": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]}
-}
 
-optimal_orders_70 = {
-    "1":  {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "2":  {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "3":  {"order": [5, 0, 0], "seasonal_order": [0, 0, 2, 52]},
-    "4":  {"order": [0, 0, 2], "seasonal_order": [0, 1, 0, 52]},
-    "5":  {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "6":  {"order": [1, 0, 5], "seasonal_order": [1, 0, 0, 52]},
-    "7":  {"order": [0, 0, 1], "seasonal_order": [0, 1, 0, 52]},
-    "8":  {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "9":  {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "10": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "11": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "12": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "13": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "14": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "15": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "16": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "17": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "18": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "19": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "20": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "21": {"order": [1, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "22": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "23": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "24": {"order": [1, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "25": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "26": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "27": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "28": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "29": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "30": {"order": [1, 1, 0], "seasonal_order": [0, 0, 1, 52]},
-    "31": {"order": [1, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "32": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "33": {"order": [0, 1, 0], "seasonal_order": [1, 0, 0, 52]},
-    "34": {"order": [1, 0, 0], "seasonal_order": [0, 0, 2, 52]},
-    "35": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "36": {"order": [0, 1, 0], "seasonal_order": [1, 0, 0, 52]},
-    "37": {"order": [1, 0, 1], "seasonal_order": [0, 1, 0, 52]},
-    "38": {"order": [0, 1, 0], "seasonal_order": [1, 1, 0, 52]},
-    "39": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "40": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "41": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "42": {"order": [0, 0, 0], "seasonal_order": [0, 1, 0, 52]},
-    "43": {"order": [0, 0, 1], "seasonal_order": [0, 1, 0, 52]},
-    "44": {"order": [1, 1, 0], "seasonal_order": [0, 0, 1, 52]},
-    "45": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]}
-}
-
-optimal_orders_70_new = {
-    "1":  {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "2":  {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "3":  {"order": [5, 0, 0], "seasonal_order": [0, 0, 2, 52]},
-    "4":  {"order": [0, 1, 2], "seasonal_order": [0, 1, 0, 52]},
-    "5":  {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "6":  {"order": [1, 0, 5], "seasonal_order": [1, 0, 0, 52]},
-    "7":  {"order": [0, 0, 1], "seasonal_order": [0, 1, 0, 52]},
-    "8":  {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "9":  {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "10": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "11": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "12": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "13": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "14": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "15": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "16": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]}, 
-    "17": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "18": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "19": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "20": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "21": {"order": [1, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "22": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "23": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "24": {"order": [1, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "25": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "26": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "27": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "28": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "29": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "30": {"order": [1, 1, 0], "seasonal_order": [0, 0, 1, 52]}, 
-    "31": {"order": [1, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "32": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]},
-    "33": {"order": [0, 1, 0], "seasonal_order": [1, 0, 0, 52]}, 
-    "34": {"order": [1, 0, 0], "seasonal_order": [0, 0, 2, 52]}, 
-    "35": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "36": {"order": [0, 1, 0], "seasonal_order": [1, 0, 0, 52]}, 
-    "37": {"order": [1, 1, 1], "seasonal_order": [0, 1, 0, 52]},
-    "38": {"order": [0, 1, 0], "seasonal_order": [1, 1, 0, 52]}, 
-    "39": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "40": {"order": [2, 0, 1], "seasonal_order": [1, 0, 0, 52]},
-    "41": {"order": [0, 1, 1], "seasonal_order": [1, 0, 0, 52]},
-    "42": {"order": [0, 1, 1], "seasonal_order": [0, 1, 0, 52]},
-    "43": {"order": [0, 1, 1], "seasonal_order": [0, 1, 0, 52]},
-    "44": {"order": [1, 1, 0], "seasonal_order": [0, 0, 1, 52]}, 
-    "45": {"order": [2, 0, 2], "seasonal_order": [1, 0, 0, 52]}
-}
 
 
 
