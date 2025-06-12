@@ -15,7 +15,7 @@ Dies ist das Quellcode-Repository zur Bachelorarbeit **„Benchmark zur Residual
 ### Datensatz
 * `Walmart_Sales.csv` – enthält den im Benchmark verwendeten Datensatz.
 
-## Nicht Teil der Arbeit aber möglicherweise interessant
+## Nicht Teil der Arbeit, aber möglicherweise interessant
 * `dataset.py` & `main_dataset.ipynb` – berechnen und visualisieren die Beziehungen zwischen den externen Einflussfaktoren des Datensatzes.
 * `main_all_stores_naiv.ipynb` – erzeugt Heatmaps, Boxplots und Scatterplots der p-Werte oder Statistiken der statistischen Tests aller Filialen für die einfache saisonale Naiv-Methode.
 * `cross_validation.py` – Implementierung der Kreuzvalidierung.
